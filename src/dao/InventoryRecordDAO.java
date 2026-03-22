@@ -2,7 +2,8 @@ package dao;
 
 import config.DBConnection;
 import model.InventoryRecord;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.*;
 
 /**

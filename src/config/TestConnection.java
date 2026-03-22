@@ -20,32 +20,29 @@ import java.sql.SQLException;
 public class TestConnection {
 
     public static void main(String[] args) {
-
         System.out.println("=== SAS – JDBC Connection Test ===");
 
-        Connection conn = DBConnection.getConnection();
+        // DBConnection.getConnection() now returns a fresh connection each time.
+        // try-with-resources closes it automatically at the end of the block.
+        try (Connection conn = DBConnection.getConnection()) {
+            System.out.println("Database connected successfully.");
 
-        if (conn != null) {
-            try {
-                // Print server metadata to confirm the right DB is reached.
-                DatabaseMetaData meta = conn.getMetaData();
-                System.out.println("Driver  : " + meta.getDriverName()
-                                   + " v" + meta.getDriverVersion());
-                System.out.println("Server  : " + meta.getDatabaseProductName()
-                                   + " " + meta.getDatabaseProductVersion());
-                System.out.println("URL     : " + meta.getURL());
-                System.out.println("User    : " + meta.getUserName());
-                System.out.println("AutoCommit : " + conn.getAutoCommit());
-                System.out.println("\nAll checks passed. JDBC connection is working correctly.");
+            DatabaseMetaData meta = conn.getMetaData();
+            System.out.println("Driver  : " + meta.getDriverName()
+                               + " v" + meta.getDriverVersion());
+            System.out.println("Server  : " + meta.getDatabaseProductName()
+                               + " " + meta.getDatabaseProductVersion());
+            System.out.println("URL     : " + meta.getURL());
+            System.out.println("User    : " + meta.getUserName());
+            System.out.println("AutoCommit : " + conn.getAutoCommit());
+            System.out.println("\nAll checks passed. JDBC connection is working correctly.");
 
-            } catch (SQLException e) {
-                System.err.println("Error reading metadata: " + e.getMessage());
-            } finally {
-                // Close the shared connection after the test.
-                DBConnection.closeConnection();
-            }
-        } else {
-            System.out.println("Connection is null – check your credentials or MySQL server status.");
+        } catch (SQLException e) {
+            System.err.println("Error reading metadata: " + e.getMessage());
+            System.exit(1);
+        } catch (RuntimeException e) {
+            // getConnection() wraps SQLException in RuntimeException on failure
+            System.err.println("Connection failed: " + e.getMessage());
             System.exit(1);
         }
     }

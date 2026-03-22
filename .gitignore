@@ -1,0 +1,48 @@
+# ===============================
+# Java build files
+# ===============================
+*.class
+*.log
+*.ctxt
+
+# IntelliJ IDEA (if used later)
+.idea/
+*.iml
+out/
+
+# VS Code settings
+.vscode/
+
+# Eclipse (if used later)
+.project
+.classpath
+.settings/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# ===============================
+# MySQL credentials / configs
+# ===============================
+config.properties
+.env
+
+# ===============================
+# Libraries (optional)
+# ===============================
+
+
+# ===============================
+# Compiled output directories
+# ===============================
+bin/
+build/
+target/
+
+# ===============================
+# Temporary files
+# ===============================
+*.tmp
+*.swp
+*.bak

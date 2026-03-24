@@ -8,17 +8,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * PriceHistoryDAO – JDBC Data Access Object for the PriceHistory table.
- *
- * Records every price change as an immutable audit row. No updates or
- * deletes are supported – the table is append-only by design.
- */
 public class PriceHistoryDAO {
 
-    // ----------------------------------------------------------------
-    // SQL constants
-    // ----------------------------------------------------------------
     private static final String SQL_INSERT =
             "INSERT INTO PriceHistory (itemCode, oldPrice, newPrice, changedAt, changedBy) " +
             "VALUES (?, ?, ?, ?, ?)";
@@ -35,16 +26,6 @@ public class PriceHistoryDAO {
             "SELECT priceHistoryId, itemCode, oldPrice, newPrice, changedAt, changedBy " +
             "FROM PriceHistory WHERE changedAt BETWEEN ? AND ? ORDER BY changedAt DESC";
 
-    // ================================================================
-    // 1. recordPriceChange(PriceHistory record)
-    // ================================================================
-
-    /**
-     * Appends a new price-change audit record.
-     *
-     * @param record a fully populated {@link PriceHistory} object
-     * @return {@code true} if the record was inserted successfully
-     */
     public boolean recordPriceChange(PriceHistory record) {
         boolean success = false;
 
@@ -71,7 +52,7 @@ public class PriceHistoryDAO {
                     }
                 }
                 System.out.println("Price change recorded: item='" + record.getItemCode()
-                                   + "', " + record.getOldPrice() + " → " + record.getNewPrice()
+                                   + "', " + record.getOldPrice() + " -> " + record.getNewPrice()
                                    + " by '" + record.getChangedBy() + "'.");
             }
 
@@ -82,17 +63,6 @@ public class PriceHistoryDAO {
         return success;
     }
 
-    // ================================================================
-    // 2. getPriceHistoryByItem(String itemCode)
-    // ================================================================
-
-    /**
-     * Returns the full price-change history for a specific item,
-     * most recent first.
-     *
-     * @param itemCode the item to query
-     * @return list of {@link PriceHistory} records; empty if none found
-     */
     public List<PriceHistory> getPriceHistoryByItem(String itemCode) {
         List<PriceHistory> list = new ArrayList<>();
 
@@ -114,16 +84,6 @@ public class PriceHistoryDAO {
         return list;
     }
 
-    // ================================================================
-    // 3. getPriceHistoryById(int priceHistoryId)
-    // ================================================================
-
-    /**
-     * Retrieves a single audit record by its primary key.
-     *
-     * @param priceHistoryId the auto-increment PK
-     * @return the matching {@link PriceHistory}, or {@code null} if not found
-     */
     public PriceHistory getPriceHistoryById(int priceHistoryId) {
         PriceHistory record = null;
 
@@ -145,18 +105,6 @@ public class PriceHistoryDAO {
         return record;
     }
 
-    // ================================================================
-    // 4. getPriceHistoryByDateRange(LocalDateTime start, LocalDateTime end)
-    // ================================================================
-
-    /**
-     * Returns all price changes that occurred within a date range,
-     * useful for manager reporting.
-     *
-     * @param start range start (inclusive)
-     * @param end   range end (inclusive)
-     * @return list of {@link PriceHistory} records; empty if none found
-     */
     public List<PriceHistory> getPriceHistoryByDateRange(LocalDateTime start, LocalDateTime end) {
         List<PriceHistory> list = new ArrayList<>();
 
@@ -179,9 +127,6 @@ public class PriceHistoryDAO {
         return list;
     }
 
-    // ================================================================
-    // Private helper – maps a ResultSet row to a PriceHistory object
-    // ================================================================
     private PriceHistory mapRow(ResultSet rs) throws SQLException {
         PriceHistory record = new PriceHistory();
         record.setPriceHistoryId(rs.getInt("priceHistoryId"));

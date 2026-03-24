@@ -7,6 +7,7 @@ import model.SalesTransaction;
 import model.TransactionItem;
 import model.UserAccount;
 import service.AuthService;
+import service.BillService;
 import service.InventoryService;
 import service.ReportService;
 import service.TransactionService;
@@ -33,6 +34,7 @@ public class Main {
     // ----------------------------------------------------------------
     private static final Scanner          sc          = new Scanner(System.in);
     private static final AuthService      authService = new AuthService();
+    private static final BillService      billService = new BillService();
     private static final InventoryService invService  = new InventoryService();
     private static final TransactionService txnService = new TransactionService();
     private static final ReportService    rptService  = new ReportService();
@@ -98,13 +100,20 @@ public class Main {
     private static void managerMenu(UserAccount user) {
         while (true) {
             printSection("MANAGER TEST MENU  (logged in as: " + user.getUserId() + ")");
-            System.out.println("  1. Add new item");
-            System.out.println("  2. Update item price");
-            System.out.println("  3. View low-stock items");
-            System.out.println("  4. View inventory status");
-            System.out.println("  5. View transactions by date range");
-            System.out.println("  6. View price history for item");
-            System.out.println("  7. Logout");
+            System.out.println("  -- Inventory & Reports --");
+            System.out.println("  1.  Add new item");
+            System.out.println("  2.  Update item price");
+            System.out.println("  3.  View low-stock items");
+            System.out.println("  4.  View inventory status");
+            System.out.println("  5.  View transactions by date range");
+            System.out.println("  6.  View price history for item");
+            System.out.println("  -- Staff Management --");
+            System.out.println("  8.  View all staff");
+            System.out.println("  9.  Add new staff member");
+            System.out.println("  10. Deactivate staff account");
+            System.out.println("  11. Reactivate staff account");
+            System.out.println("  -- Session --");
+            System.out.println("  7.  Logout");
             System.out.print("Choice: ");
 
             switch (readInt()) {
@@ -262,7 +271,68 @@ public class Main {
 
                 // ----------------------------------------------------------
                 case 7 -> { printPass("Manager logged out."); return; }
-                default -> printFail("Invalid choice. Enter 1–7.");
+
+                // ----------------------------------------------------------
+                // STAFF MANAGEMENT
+                // ----------------------------------------------------------
+                case 8 -> {
+                    printOp("UserAccountDAO.getAllUsers()", "no inputs");
+                    List<UserAccount> staff = new dao.UserAccountDAO().getAllUsers();
+                    if (staff.isEmpty()) {
+                        printPass("No user accounts found.");
+                    } else {
+                        printPass("Staff accounts: " + staff.size());
+                        System.out.printf("  %-15s %-15s %-12s %s%n",
+                            "UserId", "Role", "Status", "CreatedAt");
+                        System.out.println("  " + "-".repeat(60));
+                        for (UserAccount u : staff) {
+                            System.out.printf("  %-15s %-15s %-12s %s%n",
+                                u.getUserId(), u.getRole(), u.getStatus(),
+                                u.getCreatedAt() != null
+                                    ? u.getCreatedAt().format(DT_FMT) : "N/A");
+                        }
+                    }
+                }
+
+                case 9 -> {
+                    printOp("AuthService.createUser()", "");
+                    System.out.print("  userId   : "); String newId   = sc.nextLine().trim();
+                    System.out.print("  password : "); String newPass = sc.nextLine().trim();
+                    System.out.print("  role (SalesStaff / InventoryStaff / Manager) : ");
+                    String newRole = sc.nextLine().trim();
+                    System.out.println("  -> Inputs: userId=" + newId + ", role=" + newRole);
+
+                    UserAccount newUser = new UserAccount();
+                    newUser.setUserId(newId);
+                    newUser.setPassword(newPass);
+                    newUser.setRole(newRole);
+
+                    boolean created = authService.createUser(newUser);
+                    if (created) printPass("Staff account '" + newId + "' created with role '" + newRole + "'.");
+                    else         printFail("createUser() failed. UserId may already exist.");
+                }
+
+                case 10 -> {
+                    printOp("AuthService.changeUserStatus(INACTIVE)", "");
+                    System.out.print("  userId to deactivate : ");
+                    String deactId = sc.nextLine().trim();
+                    System.out.println("  -> Inputs: userId=" + deactId + ", status=INACTIVE");
+                    boolean ok = authService.changeUserStatus(deactId, "INACTIVE");
+                    if (ok) printPass("User '" + deactId + "' deactivated. Login will be rejected.");
+                    else    printFail("changeUserStatus(INACTIVE) failed.");
+                }
+
+                case 11 -> {
+                    printOp("AuthService.changeUserStatus(ACTIVE)", "");
+                    System.out.print("  userId to reactivate : ");
+                    String reactId = sc.nextLine().trim();
+                    System.out.println("  -> Inputs: userId=" + reactId + ", status=ACTIVE");
+                    boolean ok = authService.changeUserStatus(reactId, "ACTIVE");
+                    if (ok) printPass("User '" + reactId + "' reactivated. Login allowed.");
+                    else    printFail("changeUserStatus(ACTIVE) failed.");
+                }
+
+                default -> printFail("Invalid choice. Enter 1-11.");
             }
         }
     }
@@ -343,6 +413,7 @@ public class Main {
             System.out.println("  5. Finalize transaction");
             System.out.println("  6. Abort transaction");
             System.out.println("  7. Logout");
+            System.out.println("  8. Print bill / receipt");
             System.out.print("Choice: ");
 
             switch (readInt()) {
@@ -458,7 +529,22 @@ public class Main {
 
                 // ----------------------------------------------------------
                 case 7 -> { printPass("Sales staff logged out."); return; }
-                default -> printFail("Invalid choice. Enter 1–7.");
+
+                // ----------------------------------------------------------
+                case 8 -> {
+                    printOp("BillService.printBillToConsole()", "");
+                    System.out.print("  transactionId : ");
+                    String billTxnId = sc.nextLine().trim();
+                    if (billTxnId.isBlank() && activeTxnId != null) {
+                        billTxnId = activeTxnId;
+                        System.out.println("  (using active/last transaction: " + activeTxnId + ")");
+                    }
+                    System.out.println("  -> Inputs: transactionId=" + billTxnId);
+                    boolean ok = billService.printBillToConsole(billTxnId);
+                    if (!ok) printFail("Bill print failed – transaction must be FINALIZED first.");
+                }
+
+                default -> printFail("Invalid choice. Enter 1-8.");
             }
         }
     }

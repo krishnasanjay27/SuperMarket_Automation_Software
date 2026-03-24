@@ -2,25 +2,15 @@ package model;
 
 import java.time.LocalDateTime;
 
-/**
- * POJO representing the PriceHistory table.
- * Immutable audit record created every time a Manager changes an item price.
- */
 public class PriceHistory {
 
-    // ----------------------------------------------------------------
-    // Fields
-    // ----------------------------------------------------------------
     private int           priceHistoryId;
-    private String        itemCode;    // FK → Item.itemCode
+    private String        itemCode;
     private double        oldPrice;
     private double        newPrice;
     private LocalDateTime changedAt;
-    private String        changedBy;  // FK → UserAccount.userId (Manager)
+    private String        changedBy;
 
-    // ----------------------------------------------------------------
-    // Constructors
-    // ----------------------------------------------------------------
     public PriceHistory() { }
 
     public PriceHistory(int priceHistoryId, String itemCode, double oldPrice,
@@ -33,30 +23,24 @@ public class PriceHistory {
         this.changedBy      = changedBy;
     }
 
-    // ----------------------------------------------------------------
-    // Getters & Setters
-    // ----------------------------------------------------------------
-    public int    getPriceHistoryId()                         { return priceHistoryId; }
-    public void   setPriceHistoryId(int priceHistoryId)      { this.priceHistoryId = priceHistoryId; }
+    public int    getPriceHistoryId()                      { return priceHistoryId; }
+    public void   setPriceHistoryId(int priceHistoryId)   { this.priceHistoryId = priceHistoryId; }
 
-    public String getItemCode()                               { return itemCode; }
-    public void   setItemCode(String itemCode)                { this.itemCode = itemCode; }
+    public String getItemCode()                            { return itemCode; }
+    public void   setItemCode(String itemCode)             { this.itemCode = itemCode; }
 
-    public double getOldPrice()                               { return oldPrice; }
-    public void   setOldPrice(double oldPrice)                { this.oldPrice = oldPrice; }
+    public double getOldPrice()                            { return oldPrice; }
+    public void   setOldPrice(double oldPrice)             { this.oldPrice = oldPrice; }
 
-    public double getNewPrice()                               { return newPrice; }
-    public void   setNewPrice(double newPrice)                { this.newPrice = newPrice; }
+    public double getNewPrice()                            { return newPrice; }
+    public void   setNewPrice(double newPrice)             { this.newPrice = newPrice; }
 
-    public LocalDateTime getChangedAt()                          { return changedAt; }
-    public void          setChangedAt(LocalDateTime changedAt)   { this.changedAt = changedAt; }
+    public LocalDateTime getChangedAt()                        { return changedAt; }
+    public void          setChangedAt(LocalDateTime changedAt) { this.changedAt = changedAt; }
 
-    public String getChangedBy()                              { return changedBy; }
-    public void   setChangedBy(String changedBy)              { this.changedBy = changedBy; }
+    public String getChangedBy()                           { return changedBy; }
+    public void   setChangedBy(String changedBy)           { this.changedBy = changedBy; }
 
-    // ----------------------------------------------------------------
-    // toString
-    // ----------------------------------------------------------------
     @Override
     public String toString() {
         return "PriceHistory{" +

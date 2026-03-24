@@ -6,16 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.sql.*;
 
-/**
- * InventoryRecordDAO – JDBC Data Access Object for InventoryRecord table.
- *
- * Handles stock tracking logic and ensures inventory consistency.
- */
 public class InventoryRecordDAO {
-
-    // ------------------------------------------------------------
-    // SQL queries
-    // ------------------------------------------------------------
 
     private static final String SQL_INSERT =
             "INSERT INTO InventoryRecord (itemCode, stockLevel, lastUpdated, updatedBy) " +
@@ -36,13 +27,7 @@ public class InventoryRecordDAO {
     private static final String SQL_GET_STOCK =
             "SELECT stockLevel FROM InventoryRecord WHERE itemCode=?";
 
-
-    // ============================================================
-    // 1. addInventoryRecord()
-    // ============================================================
-
     public boolean addInventoryRecord(InventoryRecord record) {
-
         boolean success = false;
 
         try (Connection conn = DBConnection.getConnection();
@@ -61,13 +46,7 @@ public class InventoryRecordDAO {
         return success;
     }
 
-
-    // ============================================================
-    // 2. getStockLevel()
-    // ============================================================
-
     public int getStockLevel(String itemCode) {
-
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_GET_STOCK)) {
 
@@ -83,16 +62,10 @@ public class InventoryRecordDAO {
             System.err.println("getStockLevel() failed – " + e.getMessage());
         }
 
-        return -1; // item not found
+        return -1;
     }
 
-
-    // ============================================================
-    // 3. updateStock()
-    // ============================================================
-
     public boolean updateStock(String itemCode, int quantityChange, String updatedBy) {
-
         boolean success = false;
 
         try (Connection conn = DBConnection.getConnection();
@@ -116,13 +89,7 @@ public class InventoryRecordDAO {
         return success;
     }
 
-
-    // ============================================================
-    // 4. setStockLevel()
-    // ============================================================
-
     public boolean setStockLevel(String itemCode, int newStock, String updatedBy) {
-
         if (newStock < 0) {
             System.out.println("Stock cannot be negative.");
             return false;
@@ -146,13 +113,7 @@ public class InventoryRecordDAO {
         return success;
     }
 
-
-    // ============================================================
-    // 5. getInventoryByItemCode()
-    // ============================================================
-
     public InventoryRecord getInventoryByItemCode(String itemCode) {
-
         InventoryRecord record = null;
 
         try (Connection conn = DBConnection.getConnection();
@@ -173,16 +134,6 @@ public class InventoryRecordDAO {
         return record;
     }
 
-    // ================================================================
-    // 6. getAllInventoryRecords()
-    // ================================================================
-
-    /**
-     * Returns every row in the InventoryRecord table, ordered by itemCode.
-     * Used by reporting features that need a full stock snapshot.
-     *
-     * @return list of all {@link InventoryRecord} objects; empty if none found
-     */
     public List<InventoryRecord> getAllInventoryRecords() {
         List<InventoryRecord> list = new ArrayList<>();
 
@@ -204,9 +155,6 @@ public class InventoryRecordDAO {
         return list;
     }
 
-    // ================================================================
-    // Private helper – maps a ResultSet row to an InventoryRecord object
-    // ================================================================
     private InventoryRecord mapRow(ResultSet rs) throws SQLException {
         InventoryRecord record = new InventoryRecord();
         record.setInventoryId(rs.getInt("inventoryId"));

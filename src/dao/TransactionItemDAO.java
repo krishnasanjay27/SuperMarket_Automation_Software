@@ -7,18 +7,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TransactionItemDAO – JDBC Data Access Object for the TransactionItem table.
- *
- * lineTotal is always computed as quantity × unitPrice in Java before any
- * INSERT or UPDATE, keeping the stored value consistent with the triggers
- * that maintain SalesTransaction.totalAmount.
- */
 public class TransactionItemDAO {
 
-    // ----------------------------------------------------------------
-    // SQL constants
-    // ----------------------------------------------------------------
     private static final String SQL_ADD =
             "INSERT INTO TransactionItem (transactionId, itemCode, quantity, unitPrice, lineTotal) " +
             "VALUES (?, ?, ?, ?, ?)";
@@ -40,19 +30,6 @@ public class TransactionItemDAO {
     private static final String SQL_REMOVE =
             "DELETE FROM TransactionItem WHERE transactionItemId = ?";
 
-    // ================================================================
-    // 1. addTransactionItem(TransactionItem item)
-    // ================================================================
-
-    /**
-     * Inserts a new line item into a transaction.
-     *
-     * <p>lineTotal is computed here as {@code quantity × unitPrice} before
-     * the INSERT, ensuring the stored value always matches the calculation.</p>
-     *
-     * @param item a populated {@link TransactionItem}; quantity must be > 0
-     * @return {@code true} if the row was inserted successfully
-     */
     public boolean addTransactionItem(TransactionItem item) {
         if (item.getQuantity() <= 0) {
             System.err.println("addTransactionItem() failed – quantity must be greater than 0.");
@@ -61,7 +38,6 @@ public class TransactionItemDAO {
 
         boolean success = false;
 
-        // Recompute lineTotal in Java before storing.
         double lineTotal = item.getQuantity() * item.getUnitPrice();
         item.setLineTotal(lineTotal);
 
@@ -78,7 +54,6 @@ public class TransactionItemDAO {
             success = stmt.executeUpdate() > 0;
 
             if (success) {
-                // Capture the AUTO_INCREMENT id and write it back to the object.
                 try (ResultSet keys = stmt.getGeneratedKeys()) {
                     if (keys.next()) {
                         item.setTransactionItemId(keys.getInt(1));
@@ -100,17 +75,6 @@ public class TransactionItemDAO {
         return success;
     }
 
-    // ================================================================
-    // 2. getItemsByTransactionId(String transactionId)
-    // ================================================================
-
-    /**
-     * Returns all line items belonging to a specific transaction,
-     * ordered by insertion sequence.
-     *
-     * @param transactionId the parent transaction ID
-     * @return list of {@link TransactionItem} objects; empty if none
-     */
     public List<TransactionItem> getItemsByTransactionId(String transactionId) {
         List<TransactionItem> list = new ArrayList<>();
 
@@ -132,20 +96,6 @@ public class TransactionItemDAO {
         return list;
     }
 
-    // ================================================================
-    // 3. updateTransactionItemQuantity(int transactionItemId, int newQuantity)
-    // ================================================================
-
-    /**
-     * Updates the quantity of an existing line item and recalculates lineTotal.
-     *
-     * <p>lineTotal is recomputed as {@code newQuantity × unitPrice} using the
-     * unitPrice already stored in the database, so price accuracy is preserved.</p>
-     *
-     * @param transactionItemId the primary key of the line item to update
-     * @param newQuantity       the replacement quantity (must be > 0)
-     * @return {@code true} if the update succeeded
-     */
     public boolean updateTransactionItemQuantity(int transactionItemId, int newQuantity) {
         if (newQuantity <= 0) {
             System.err.println("updateTransactionItemQuantity() failed – quantity must be > 0. " +
@@ -155,7 +105,6 @@ public class TransactionItemDAO {
 
         boolean success = false;
 
-        // Fetch the stored unitPrice to recompute lineTotal accurately.
         double unitPrice = fetchUnitPrice(transactionItemId);
         if (unitPrice < 0) {
             System.err.println("updateTransactionItemQuantity() failed – item not found (id="
@@ -187,19 +136,6 @@ public class TransactionItemDAO {
         return success;
     }
 
-    // ================================================================
-    // 4. removeTransactionItem(int transactionItemId)
-    // ================================================================
-
-    /**
-     * Deletes a single line item from a transaction.
-     *
-     * <p>The {@code trg_RecalcTotalOnDelete} trigger automatically adjusts
-     * {@code SalesTransaction.totalAmount} after this delete.</p>
-     *
-     * @param transactionItemId the primary key of the line item to remove
-     * @return {@code true} if the row was deleted
-     */
     public boolean removeTransactionItem(int transactionItemId) {
         boolean success = false;
 
@@ -224,16 +160,6 @@ public class TransactionItemDAO {
         return success;
     }
 
-    // ================================================================
-    // 5. getTransactionItemById(int transactionItemId)
-    // ================================================================
-
-    /**
-     * Retrieves a single line item by its auto-increment primary key.
-     *
-     * @param transactionItemId the primary key to look up
-     * @return the matching {@link TransactionItem}, or {@code null} if not found
-     */
     public TransactionItem getTransactionItemById(int transactionItemId) {
         TransactionItem item = null;
 
@@ -255,9 +181,6 @@ public class TransactionItemDAO {
         return item;
     }
 
-    // ================================================================
-    // Private helper – fetch the stored unitPrice for a line item
-    // ================================================================
     private double fetchUnitPrice(int transactionItemId) {
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(SQL_GET_UNIT_PRICE)) {
@@ -274,12 +197,9 @@ public class TransactionItemDAO {
             System.err.println("fetchUnitPrice() failed – " + e.getMessage());
         }
 
-        return -1; // signals "not found"
+        return -1;
     }
 
-    // ================================================================
-    // Private helper – maps a ResultSet row to a TransactionItem object
-    // ================================================================
     private TransactionItem mapRow(ResultSet rs) throws SQLException {
         TransactionItem item = new TransactionItem();
         item.setTransactionItemId(rs.getInt("transactionItemId"));

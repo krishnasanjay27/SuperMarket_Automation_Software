@@ -8,17 +8,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * ItemDAO – JDBC Data Access Object for the Item table.
- *
- * Handles all database operations for the product master catalogue.
- * No UI logic is included.
- */
 public class ItemDAO {
 
-    // ----------------------------------------------------------------
-    // SQL constants
-    // ----------------------------------------------------------------
     private static final String SQL_ADD_ITEM =
             "INSERT INTO Item (itemCode, itemName, price, costPrice, reorderLevel, category, created_at) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -37,16 +28,6 @@ public class ItemDAO {
     private static final String SQL_DELETE_ITEM =
             "DELETE FROM Item WHERE itemCode = ?";
 
-    // ================================================================
-    // 1. addItem(Item item)
-    // ================================================================
-
-    /**
-     * Inserts a new product into the Item master catalogue.
-     *
-     * @param item a fully populated {@link Item} object
-     * @return {@code true} if the record was inserted successfully
-     */
     public boolean addItem(Item item) {
         boolean success = false;
 
@@ -82,16 +63,6 @@ public class ItemDAO {
         return success;
     }
 
-    // ================================================================
-    // 2. getItemByCode(String itemCode)
-    // ================================================================
-
-    /**
-     * Retrieves a single {@link Item} by its primary key.
-     *
-     * @param itemCode the item code to look up
-     * @return the matching {@link Item}, or {@code null} if not found
-     */
     public Item getItemByCode(String itemCode) {
         Item item = null;
 
@@ -113,15 +84,6 @@ public class ItemDAO {
         return item;
     }
 
-    // ================================================================
-    // 3. getAllItems()
-    // ================================================================
-
-    /**
-     * Retrieves the full product catalogue, ordered by category then name.
-     *
-     * @return a {@link List} of all {@link Item} records; empty list if none found
-     */
     public List<Item> getAllItems() {
         List<Item> items = new ArrayList<>();
 
@@ -140,22 +102,6 @@ public class ItemDAO {
         return items;
     }
 
-    // ================================================================
-    // 4. updateItemPrice(String itemCode, double price)
-    // ================================================================
-
-    /**
-     * Updates the selling price of an existing item.
-     *
-     * <p>This method only updates the {@code price} column. The caller
-     * (typically a Manager-facing service) is responsible for writing a
-     * corresponding record to the {@code PriceHistory} table before or after
-     * calling this method.</p>
-     *
-     * @param itemCode the item whose price is being changed
-     * @param price    the new selling price (must be &ge; 0)
-     * @return {@code true} if exactly one row was updated
-     */
     public boolean updateItemPrice(String itemCode, double price) {
         if (price < 0) {
             System.err.println("updateItemPrice() failed – price cannot be negative.");
@@ -186,21 +132,6 @@ public class ItemDAO {
         return success;
     }
 
-    // ================================================================
-    // 5. deleteItem(String itemCode)
-    // ================================================================
-
-    /**
-     * Permanently deletes an item from the catalogue.
-     *
-     * <p><strong>Warning:</strong> deletion is blocked by the database if the
-     * item is referenced in {@code TransactionItem}, {@code InventoryRecord},
-     * or {@code PriceHistory} (FK RESTRICT). Remove or reassign dependent
-     * records first.</p>
-     *
-     * @param itemCode the item code to delete
-     * @return {@code true} if the record was deleted successfully
-     */
     public boolean deleteItem(String itemCode) {
         boolean success = false;
 
@@ -228,60 +159,54 @@ public class ItemDAO {
         return success;
     }
 
-    //6 update item (manager feature)
-public boolean updateItem(Item item) {
+    public boolean updateItem(Item item) {
+        boolean success = false;
 
-    boolean success = false;
+        String sql = "UPDATE Item SET itemName=?, price=?, costPrice=?, reorderLevel=?, category=? WHERE itemCode=?";
 
-    String sql = "UPDATE Item SET itemName=?, price=?, costPrice=?, reorderLevel=?, category=? WHERE itemCode=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-    try (Connection conn = DBConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, item.getItemName());
+            stmt.setDouble(2, item.getPrice());
+            stmt.setDouble(3, item.getCostPrice());
+            stmt.setInt(4, item.getReorderLevel());
+            stmt.setString(5, item.getCategory());
+            stmt.setString(6, item.getItemCode());
 
-        stmt.setString(1, item.getItemName());
-        stmt.setDouble(2, item.getPrice());
-        stmt.setDouble(3, item.getCostPrice());
-        stmt.setInt(4, item.getReorderLevel());
-        stmt.setString(5, item.getCategory());
-        stmt.setString(6, item.getItemCode());
+            success = stmt.executeUpdate() > 0;
 
-        success = stmt.executeUpdate() > 0;
-
-    } catch (SQLException e) {
-        System.err.println("updateItem() failed – " + e.getMessage());
-    }
-
-    return success;
-}
-
-//7 search items by name 
-public List<Item> searchItemsByName(String keyword) {
-
-    List<Item> items = new ArrayList<>();
-
-    String sql = "SELECT * FROM Item WHERE itemName LIKE ? ORDER BY itemName";
-
-    try (Connection conn = DBConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-        stmt.setString(1, "%" + keyword + "%");
-
-        try (ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                items.add(mapRow(rs));
-            }
+        } catch (SQLException e) {
+            System.err.println("updateItem() failed – " + e.getMessage());
         }
 
-    } catch (SQLException e) {
-        System.err.println("searchItemsByName() failed – " + e.getMessage());
+        return success;
     }
 
-    return items;
-}
-    // ================================================================
-    // Private helper – maps a ResultSet row to an Item object
-    // ================================================================
+    public List<Item> searchItemsByName(String keyword) {
+        List<Item> items = new ArrayList<>();
+
+        String sql = "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, created_at " +
+                     "FROM Item WHERE itemName LIKE ? ORDER BY itemName";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + keyword + "%");
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapRow(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("searchItemsByName() failed – " + e.getMessage());
+        }
+
+        return items;
+    }
+
     private Item mapRow(ResultSet rs) throws SQLException {
         Item item = new Item();
         item.setItemCode(rs.getString("itemCode"));

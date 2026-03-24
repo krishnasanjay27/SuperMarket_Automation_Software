@@ -2,15 +2,8 @@ package model;
 
 import java.time.LocalDateTime;
 
-/**
- * POJO representing the Item table.
- * Master catalogue of all products sold in the supermarket.
- */
 public class Item {
 
-    // ----------------------------------------------------------------
-    // Fields
-    // ----------------------------------------------------------------
     private String        itemCode;
     private String        itemName;
     private double        price;
@@ -19,9 +12,6 @@ public class Item {
     private String        category;
     private LocalDateTime createdAt;
 
-    // ----------------------------------------------------------------
-    // Constructors
-    // ----------------------------------------------------------------
     public Item() { }
 
     public Item(String itemCode, String itemName, double price, double costPrice,
@@ -35,33 +25,27 @@ public class Item {
         this.createdAt    = createdAt;
     }
 
-    // ----------------------------------------------------------------
-    // Getters & Setters
-    // ----------------------------------------------------------------
-    public String getItemCode()                        { return itemCode; }
-    public void   setItemCode(String itemCode)         { this.itemCode = itemCode; }
+    public String getItemCode()                       { return itemCode; }
+    public void   setItemCode(String itemCode)        { this.itemCode = itemCode; }
 
-    public String getItemName()                        { return itemName; }
-    public void   setItemName(String itemName)         { this.itemName = itemName; }
+    public String getItemName()                       { return itemName; }
+    public void   setItemName(String itemName)        { this.itemName = itemName; }
 
-    public double getPrice()                           { return price; }
-    public void   setPrice(double price)               { this.price = price; }
+    public double getPrice()                          { return price; }
+    public void   setPrice(double price)              { this.price = price; }
 
-    public double getCostPrice()                       { return costPrice; }
-    public void   setCostPrice(double costPrice)       { this.costPrice = costPrice; }
+    public double getCostPrice()                      { return costPrice; }
+    public void   setCostPrice(double costPrice)      { this.costPrice = costPrice; }
 
-    public int    getReorderLevel()                    { return reorderLevel; }
-    public void   setReorderLevel(int reorderLevel)    { this.reorderLevel = reorderLevel; }
+    public int    getReorderLevel()                   { return reorderLevel; }
+    public void   setReorderLevel(int reorderLevel)   { this.reorderLevel = reorderLevel; }
 
-    public String getCategory()                        { return category; }
-    public void   setCategory(String category)         { this.category = category; }
+    public String getCategory()                       { return category; }
+    public void   setCategory(String category)        { this.category = category; }
 
-    public LocalDateTime getCreatedAt()                         { return createdAt; }
-    public void          setCreatedAt(LocalDateTime createdAt)  { this.createdAt = createdAt; }
+    public LocalDateTime getCreatedAt()                        { return createdAt; }
+    public void          setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    // ----------------------------------------------------------------
-    // toString
-    // ----------------------------------------------------------------
     @Override
     public String toString() {
         return "Item{" +

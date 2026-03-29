@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.ReceiptController"
+            styleClass="root-pane"
+            prefWidth="680" prefHeight="640">
+
+    <!-- Top Bar -->
+    <top>
+        <HBox styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
+            <Label text="🖨️" style="-fx-font-size:18;"/>
+            <Label text="Transaction Receipt" styleClass="panel-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button id="printBtn"  text="🖨 Print Receipt" onAction="#handlePrint"  styleClass="btn-primary"/>
+            <Button id="closeBtn"  text="✖ Close"          onAction="#handleClose"  styleClass="btn-secondary"/>
+        </HBox>
+    </top>
+
+    <!-- Receipt Content -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="scroll-pane">
+            <VBox styleClass="content-area" spacing="20">
+                <padding><Insets top="24" right="40" bottom="24" left="40"/></padding>
+
+                <VBox styleClass="receipt-box" spacing="14">
+
+                    <!-- Store Header -->
+                    <VBox alignment="CENTER" spacing="4">
+                        <Label text="🛒  SUPERMARKET AUTOMATION SYSTEM" styleClass="receipt-title"/>
+                        <Label text="Official Sales Receipt" styleClass="receipt-meta"/>
+                        <Separator/>
+                    </VBox>
+
+                    <!-- Transaction Meta -->
+                    <GridPane hgap="20" vgap="8">
+                        <Label text="Transaction ID:" styleClass="field-label" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <Label fx:id="receiptTxnId" text="—" styleClass="guide-text" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                        <Label text="Date &amp; Time:" styleClass="field-label" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                        <Label fx:id="receiptDate" text="—" styleClass="guide-text" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <Label text="Staff ID:" styleClass="field-label" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <Label fx:id="receiptStaffId" text="—" styleClass="guide-text" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                        <Label text="Status:" styleClass="field-label" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                        <Label fx:id="receiptStatus" text="—" styleClass="guide-text" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                    </GridPane>
+
+                    <Separator/>
+
+                    <!-- Items Table -->
+                    <Label text="Purchased Items" styleClass="card-title"/>
+                    <TableView fx:id="receiptItemsTable" prefHeight="280" maxWidth="Infinity">
+                        <columns>
+                            <TableColumn fx:id="rColItemCode"  text="Item Code"  prefWidth="150"/>
+                            <TableColumn fx:id="rColQty"       text="Quantity"   prefWidth="100"/>
+                            <TableColumn fx:id="rColUnitPrice" text="Unit Price" prefWidth="130"/>
+                            <TableColumn fx:id="rColLineTotal" text="Total"      prefWidth="130"/>
+                        </columns>
+                        <placeholder><Label text="No items found." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                    </TableView>
+
+                    <Separator/>
+
+                    <!-- Grand Total -->
+                    <HBox alignment="CENTER_RIGHT" spacing="16">
+                        <Label text="GRAND TOTAL:" style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                        <Label fx:id="receiptTotal" text="₹ 0.00" styleClass="receipt-total"/>
+                    </HBox>
+
+                    <!-- Footer -->
+                    <VBox alignment="CENTER" spacing="4">
+                        <Separator/>
+                        <Label text="Thank you for your purchase!" styleClass="receipt-meta"/>
+                        <Label text="Please retain this receipt for your records." styleClass="receipt-meta"/>
+                    </VBox>
+
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

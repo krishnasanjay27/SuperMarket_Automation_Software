@@ -81,6 +81,10 @@ public class AuthService {
         return userDAO.updateUserStatus(userId, status.toUpperCase());
     }
 
+    public java.util.List<UserAccount> getAllUsers() {
+        return userDAO.getAllUsers();
+    }
+
     public UserAccount getUserById(String userId) {
         if (userId == null || userId.isBlank()) {
             System.err.println("getUserById() failed – userId must not be empty.");

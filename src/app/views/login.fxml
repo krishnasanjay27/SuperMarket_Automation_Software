@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.LoginController"
+            styleClass="root-pane"
+            prefWidth="520" prefHeight="460">
+
+    <center>
+        <VBox alignment="CENTER" spacing="0" styleClass="login-card">
+
+            <!-- Header -->
+            <VBox alignment="CENTER" styleClass="login-header" spacing="6">
+                <Label text="🛒" styleClass="logo-icon"/>
+                <Label text="Supermarket Automation System" styleClass="login-title"/>
+                <Label text="Sign in with your credentials to continue" styleClass="login-subtitle"/>
+            </VBox>
+
+            <!-- Form -->
+            <VBox spacing="16" styleClass="login-form">
+
+                <VBox spacing="5">
+                    <Label text="User ID" styleClass="field-label"/>
+                    <TextField fx:id="userIdField" promptText="Enter your user ID"
+                               styleClass="input-field" maxWidth="340"/>
+                </VBox>
+
+                <VBox spacing="5">
+                    <Label text="Password" styleClass="field-label"/>
+                    <PasswordField fx:id="passwordField" promptText="Enter your password"
+                                  styleClass="input-field" maxWidth="340"/>
+                </VBox>
+
+                <HBox spacing="12" alignment="CENTER">
+                    <padding><Insets top="10"/></padding>
+                    <Button id="loginBtn"  text="Login"  onAction="#handleLogin"  styleClass="btn-primary"  prefWidth="160" prefHeight="40"/>
+                    <Button id="exitBtn"   text="Exit"   onAction="#handleExit"   styleClass="btn-secondary" prefWidth="160" prefHeight="40"/>
+                </HBox>
+
+            </VBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

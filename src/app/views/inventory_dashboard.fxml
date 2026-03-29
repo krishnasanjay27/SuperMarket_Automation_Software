@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.InventoryDashboardController"
+            styleClass="root-pane"
+            prefWidth="860" prefHeight="560">
+
+    <!-- Top Bar -->
+    <top>
+        <HBox styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
+            <Label text="📦" style="-fx-font-size:18;"/>
+            <VBox spacing="1">
+                <Label text="Inventory Management Panel" styleClass="panel-title"/>
+                <Label fx:id="staffIdLabel" text="" styleClass="panel-subtitle"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button id="logoutBtn" text="Logout" onAction="#handleLogout" styleClass="btn-logout"/>
+        </HBox>
+    </top>
+
+    <!-- Sidebar -->
+    <left>
+        <VBox styleClass="sidebar" spacing="6" prefWidth="210">
+            <padding><Insets top="20" right="14" bottom="20" left="14"/></padding>
+
+            <Label text="STOCK OPERATIONS" styleClass="sidebar-section"/>
+            <Button id="updateStockBtn"    text="↑↓  Update Stock"      onAction="#handleUpdateStock"     styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="setStockBtn"       text="📋  Set Stock Level"    onAction="#handleSetStockLevel"   styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="checkStockBtn"     text="🔍  Check Stock Level"  onAction="#handleCheckStockLevel" styleClass="sidebar-btn" maxWidth="Infinity"/>
+        </VBox>
+    </left>
+
+    <!-- Main Content -->
+    <center>
+        <VBox styleClass="content-area" spacing="20" alignment="TOP_LEFT">
+            <padding><Insets top="24" right="28" bottom="24" left="28"/></padding>
+
+            <Label text="Inventory Operations" styleClass="welcome-label"/>
+            <Label text="Use the sidebar to manage stock levels." styleClass="section-subtitle"/>
+
+            <!-- Update Stock Form -->
+            <VBox fx:id="updateStockPanel" styleClass="info-card" spacing="14" maxWidth="500"
+                  managed="false" visible="false">
+                <Label text="Update Stock Level" styleClass="card-title"/>
+                <VBox spacing="5">
+                    <Label text="Item Code" styleClass="field-label"/>
+                    <TextField fx:id="usItemCodeField" promptText="e.g. ITEM001" styleClass="input-field"/>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Quantity Change (+ to add, - to reduce)" styleClass="field-label"/>
+                    <TextField fx:id="usQtyChangeField" promptText="e.g. 50 or -10" styleClass="input-field"/>
+                </VBox>
+                <HBox spacing="10">
+                    <Button id="usSubmitBtn" text="Apply Update" onAction="#handleUpdateStockSubmit" styleClass="btn-primary"/>
+                    <Button text="Clear" onAction="#handleClear" styleClass="btn-secondary"/>
+                </HBox>
+                <Label fx:id="usResultLabel" text="" styleClass="result-label" wrapText="true"/>
+            </VBox>
+
+            <!-- Set Stock Level Form -->
+            <VBox fx:id="setStockPanel" styleClass="info-card" spacing="14" maxWidth="500"
+                  managed="false" visible="false">
+                <Label text="Set Exact Stock Level" styleClass="card-title"/>
+                <VBox spacing="5">
+                    <Label text="Item Code" styleClass="field-label"/>
+                    <TextField fx:id="ssItemCodeField" promptText="e.g. ITEM001" styleClass="input-field"/>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="New Stock Level" styleClass="field-label"/>
+                    <TextField fx:id="ssNewStockField" promptText="e.g. 100" styleClass="input-field"/>
+                </VBox>
+                <HBox spacing="10">
+                    <Button id="ssSubmitBtn" text="Set Level" onAction="#handleSetStockSubmit" styleClass="btn-primary"/>
+                    <Button text="Clear" onAction="#handleClear" styleClass="btn-secondary"/>
+                </HBox>
+                <Label fx:id="ssResultLabel" text="" styleClass="result-label" wrapText="true"/>
+            </VBox>
+
+            <!-- Check Stock Level Form -->
+            <VBox fx:id="checkStockPanel" styleClass="info-card" spacing="14" maxWidth="500"
+                  managed="false" visible="false">
+                <Label text="Check Current Stock" styleClass="card-title"/>
+                <VBox spacing="5">
+                    <Label text="Item Code" styleClass="field-label"/>
+                    <TextField fx:id="csItemCodeField" promptText="e.g. ITEM001" styleClass="input-field"/>
+                </VBox>
+                <HBox spacing="10">
+                    <Button id="csSubmitBtn" text="Check Stock" onAction="#handleCheckStockSubmit" styleClass="btn-primary"/>
+                    <Button text="Clear" onAction="#handleClear" styleClass="btn-secondary"/>
+                </HBox>
+                <Label fx:id="csResultLabel" text="" styleClass="result-label" wrapText="true"/>
+            </VBox>
+
+            <!-- Welcome card when nothing selected -->
+            <VBox fx:id="welcomePanel" styleClass="info-card" spacing="10" maxWidth="500">
+                <Label text="Available Operations" styleClass="card-title"/>
+                <Label text="• Update Stock — add or reduce stock by an amount (positive or negative)."
+                       styleClass="guide-text" wrapText="true"/>
+                <Label text="• Set Stock Level — override the stock level to a precise value."
+                       styleClass="guide-text" wrapText="true"/>
+                <Label text="• Check Stock Level — view the current stock for any item code."
+                       styleClass="guide-text" wrapText="true"/>
+            </VBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

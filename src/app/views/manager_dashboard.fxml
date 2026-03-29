@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="app.controllers.ManagerDashboardController"
+            styleClass="root-pane"
+            prefWidth="1150" prefHeight="720">
+
+    <!-- Top Bar -->
+    <top>
+        <HBox styleClass="top-bar" alignment="CENTER_LEFT" spacing="12">
+            <Label text="🏢" style="-fx-font-size:18;"/>
+            <VBox spacing="1">
+                <Label text="Manager Dashboard" styleClass="panel-title"/>
+                <Label fx:id="managerIdLabel" text="" styleClass="panel-subtitle"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button id="logoutBtn" text="Logout" onAction="#handleLogout" styleClass="btn-logout"/>
+        </HBox>
+    </top>
+
+    <!-- Sidebar -->
+    <left>
+        <VBox styleClass="sidebar" spacing="6" prefWidth="220">
+            <padding><Insets top="20" right="14" bottom="20" left="14"/></padding>
+
+            <Label text="CATALOGUE" styleClass="sidebar-section"/>
+            <Button id="addItemNavBtn"       text="+ Add New Item"        onAction="#showAddItem"          styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="updatePriceNavBtn"   text="💲 Update Item Price"   onAction="#showUpdatePrice"      styleClass="sidebar-btn" maxWidth="Infinity"/>
+
+            <Separator/>
+
+            <Label text="REPORTS" styleClass="sidebar-section"/>
+            <Button id="invStatusNavBtn"     text="📊 Inventory Status"    onAction="#showInventoryStatus"  styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="lowStockNavBtn"      text="⚠  Low Stock Items"     onAction="#showLowStock"         styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="priceHistNavBtn"     text="📈 Price History"        onAction="#showPriceHistory"     styleClass="sidebar-btn" maxWidth="Infinity"/>
+
+            <Separator/>
+
+            <Label text="TRANSACTIONS" styleClass="sidebar-section"/>
+            <Button id="txnByDateNavBtn"     text="📋 Transactions by Date" onAction="#showTransactions"    styleClass="sidebar-btn" maxWidth="Infinity"/>
+
+            <Separator/>
+
+            <Label text="STAFF" styleClass="sidebar-section"/>
+            <Button id="staffMgmtNavBtn"     text="👥 Staff Management"     onAction="#showStaffManagement" styleClass="sidebar-btn" maxWidth="Infinity"/>
+        </VBox>
+    </left>
+
+    <!-- Main Content: StackPane with overlay panels -->
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="scroll-pane">
+            <VBox styleClass="content-area" spacing="0">
+                <padding><Insets top="24" right="28" bottom="24" left="28"/></padding>
+
+                <!-- ════ ADD NEW ITEM PANEL ════ -->
+                <VBox fx:id="panelAddItem" spacing="14" managed="false" visible="false">
+                    <Label text="Add New Item" styleClass="welcome-label"/>
+                    <Label text="Register a new product to the catalogue." styleClass="section-subtitle"/>
+                    <VBox styleClass="info-card" spacing="14" maxWidth="560">
+                        <GridPane hgap="16" vgap="12">
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Item Code" styleClass="field-label"/>
+                                <TextField fx:id="aiItemCode" promptText="e.g. ITEM001" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="Item Name" styleClass="field-label"/>
+                                <TextField fx:id="aiItemName" promptText="e.g. Rice 1kg" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Price (₹)" styleClass="field-label"/>
+                                <TextField fx:id="aiPrice" promptText="e.g. 49.99" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="Cost Price (₹)" styleClass="field-label"/>
+                                <TextField fx:id="aiCostPrice" promptText="e.g. 35.00" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                                <Label text="Reorder Level" styleClass="field-label"/>
+                                <TextField fx:id="aiReorderLevel" promptText="e.g. 20" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                <Label text="Category" styleClass="field-label"/>
+                                <TextField fx:id="aiCategory" promptText="e.g. Groceries" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                                <Label text="Initial Stock" styleClass="field-label"/>
+                                <TextField fx:id="aiInitialStock" promptText="e.g. 100" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
+                        </GridPane>
+                        <HBox spacing="10">
+                            <Button id="aiSubmitBtn" text="Add Item" onAction="#handleAddNewItem" styleClass="btn-primary"/>
+                            <Button text="Clear Fields" onAction="#handleClearAddItem" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ UPDATE PRICE PANEL ════ -->
+                <VBox fx:id="panelUpdatePrice" spacing="14" managed="false" visible="false">
+                    <Label text="Update Item Price" styleClass="welcome-label"/>
+                    <Label text="Change the selling price of an existing item." styleClass="section-subtitle"/>
+                    <VBox styleClass="info-card" spacing="14" maxWidth="420">
+                        <VBox spacing="5">
+                            <Label text="Item Code" styleClass="field-label"/>
+                            <TextField fx:id="upItemCode" promptText="e.g. ITEM001" styleClass="input-field"/>
+                        </VBox>
+                        <VBox spacing="5">
+                            <Label text="New Price (₹)" styleClass="field-label"/>
+                            <TextField fx:id="upNewPrice" promptText="e.g. 59.99" styleClass="input-field"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <Button id="upSubmitBtn" text="Update Price" onAction="#handleUpdateItemPrice" styleClass="btn-primary"/>
+                            <Button text="Clear" onAction="#handleClearUpdatePrice" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ INVENTORY STATUS PANEL ════ -->
+                <VBox fx:id="panelInventoryStatus" spacing="14" managed="false" visible="false">
+                    <Label text="Inventory Status" styleClass="welcome-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Current stock levels for all items." styleClass="section-subtitle"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button id="invRefreshBtn" text="Refresh" onAction="#handleViewInventoryStatus" styleClass="btn-primary"/>
+                    </HBox>
+                    <VBox styleClass="table-card" spacing="8">
+                        <TableView fx:id="inventoryTable" prefHeight="400" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="invItemCodeCol"    text="Item Code"   prefWidth="160"/>
+                                <TableColumn fx:id="invStockCol"       text="Stock Level" prefWidth="130"/>
+                                <TableColumn fx:id="invUpdatedByCol"   text="Updated By"  prefWidth="150"/>
+                                <TableColumn fx:id="invLastUpdatedCol" text="Last Updated" prefWidth="220"/>
+                            </columns>
+                            <placeholder><Label text="Click 'Refresh' to load inventory data." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ LOW STOCK PANEL ════ -->
+                <VBox fx:id="panelLowStock" spacing="14" managed="false" visible="false">
+                    <Label text="Low Stock Items" styleClass="welcome-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Items at or below their reorder level." styleClass="section-subtitle"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button id="lsRefreshBtn" text="Refresh" onAction="#handleViewLowStockItems" styleClass="btn-danger"/>
+                    </HBox>
+                    <VBox styleClass="table-card" spacing="8">
+                        <TableView fx:id="lowStockTable" prefHeight="360" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="lsItemCodeCol" text="Item Code"   prefWidth="150"/>
+                                <TableColumn fx:id="lsItemNameCol" text="Item Name"   prefWidth="200"/>
+                                <TableColumn fx:id="lsReorderCol"  text="Reorder Lvl" prefWidth="130"/>
+                                <TableColumn fx:id="lsCategoryCol" text="Category"    prefWidth="150"/>
+                            </columns>
+                            <placeholder><Label text="Click 'Refresh' to check low stock." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ TRANSACTIONS BY DATE PANEL ════ -->
+                <VBox fx:id="panelTransactions" spacing="14" managed="false" visible="false">
+                    <Label text="Transactions by Date Range" styleClass="welcome-label"/>
+                    <Label text="Filter sales transactions by a date range." styleClass="section-subtitle"/>
+                    <VBox styleClass="info-card" spacing="10" maxWidth="480">
+                        <HBox spacing="16" alignment="CENTER_LEFT">
+                            <VBox spacing="5">
+                                <Label text="From Date" styleClass="field-label"/>
+                                <DatePicker fx:id="startDatePicker" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5">
+                                <Label text="To Date" styleClass="field-label"/>
+                                <DatePicker fx:id="endDatePicker" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5">
+                                <Label text=" " styleClass="field-label"/>
+                                <Button id="txnSearchBtn" text="Search" onAction="#handleViewTransactionsByDate" styleClass="btn-primary" prefHeight="36"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                    <VBox styleClass="table-card" spacing="8">
+                        <TableView fx:id="txnTable" prefHeight="360" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="txnIdCol"     text="Transaction ID" prefWidth="200"/>
+                                <TableColumn fx:id="txnDateCol"   text="Date"           prefWidth="180"/>
+                                <TableColumn fx:id="txnAmountCol" text="Total (₹)"      prefWidth="120"/>
+                                <TableColumn fx:id="txnStatusCol" text="Status"         prefWidth="110"/>
+                                <TableColumn fx:id="txnStaffCol"  text="Staff ID"       prefWidth="130"/>
+                            </columns>
+                            <placeholder><Label text="Select a date range and click Search." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ PRICE HISTORY PANEL ════ -->
+                <VBox fx:id="panelPriceHistory" spacing="14" managed="false" visible="false">
+                    <Label text="Price History" styleClass="welcome-label"/>
+                    <Label text="View price change audit trail for a product." styleClass="section-subtitle"/>
+                    <VBox styleClass="info-card" spacing="10" maxWidth="380">
+                        <VBox spacing="5">
+                            <Label text="Item Code" styleClass="field-label"/>
+                            <TextField fx:id="phItemCode" promptText="e.g. ITEM001" styleClass="input-field"/>
+                        </VBox>
+                        <Button id="phSearchBtn" text="View Price History" onAction="#handleViewPriceHistory" styleClass="btn-primary"/>
+                    </VBox>
+                    <VBox styleClass="table-card" spacing="8">
+                        <TableView fx:id="priceHistTable" prefHeight="340" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="phOldPriceCol"  text="Old Price (₹)" prefWidth="150"/>
+                                <TableColumn fx:id="phNewPriceCol"  text="New Price (₹)" prefWidth="150"/>
+                                <TableColumn fx:id="phChangedAtCol" text="Changed At"    prefWidth="200"/>
+                                <TableColumn fx:id="phChangedByCol" text="Changed By"    prefWidth="150"/>
+                            </columns>
+                            <placeholder><Label text="Enter an item code and click search." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ STAFF MANAGEMENT PANEL ════ -->
+                <VBox fx:id="panelStaffManagement" spacing="16" managed="false" visible="false">
+                    <Label text="Staff Management" styleClass="welcome-label"/>
+                    <Label text="Manage staff accounts and access levels." styleClass="section-subtitle"/>
+
+                    <!-- Action bar -->
+                    <HBox spacing="10">
+                        <Button id="viewStaffBtn"       text="👥 View All Staff"      onAction="#handleViewAllStaff"       styleClass="btn-primary"/>
+                        <Button id="addStaffBtn"        text="+ Add Staff Member"     onAction="#showAddStaff"             styleClass="btn-secondary"/>
+                        <Button id="deactivateStaffBtn" text="🔒 Deactivate Account"  onAction="#showDeactivateStaff"      styleClass="btn-secondary"/>
+                        <Button id="reactivateStaffBtn" text="🔓 Reactivate Account"  onAction="#showReactivateStaff"      styleClass="btn-secondary"/>
+                    </HBox>
+
+                    <!-- Staff Table -->
+                    <VBox styleClass="table-card" spacing="8">
+                        <Label text="All Staff Accounts" styleClass="card-title"/>
+                        <TableView fx:id="staffTable" prefHeight="280" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="stUserIdCol"    text="User ID"    prefWidth="160"/>
+                                <TableColumn fx:id="stRoleCol"      text="Role"       prefWidth="160"/>
+                                <TableColumn fx:id="stStatusCol"    text="Status"     prefWidth="120"/>
+                                <TableColumn fx:id="stCreatedAtCol" text="Created At" prefWidth="200"/>
+                            </columns>
+                            <placeholder><Label text="Click 'View All Staff' to load data." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Add Staff Form -->
+                    <VBox fx:id="addStaffForm" styleClass="info-card" spacing="12" maxWidth="480"
+                          managed="false" visible="false">
+                        <Label text="Add New Staff Member" styleClass="card-title"/>
+                        <HBox spacing="16">
+                            <VBox spacing="5">
+                                <Label text="User ID" styleClass="field-label"/>
+                                <TextField fx:id="newUserId" promptText="e.g. S005" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5">
+                                <Label text="Password" styleClass="field-label"/>
+                                <PasswordField fx:id="newPassword" promptText="Password" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                        </HBox>
+                        <VBox spacing="5">
+                            <Label text="Role" styleClass="field-label"/>
+                            <ComboBox fx:id="newRole" prefWidth="220"
+                                      promptText="Select Role"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <Button id="addStaffSubmitBtn" text="Create Account" onAction="#handleAddStaff" styleClass="btn-success"/>
+                            <Button text="Cancel" onAction="#hideStaffForms" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Deactivate Form -->
+                    <VBox fx:id="deactivateForm" styleClass="info-card" spacing="12" maxWidth="380"
+                          managed="false" visible="false">
+                        <Label text="Deactivate Staff Account" styleClass="card-title"/>
+                        <VBox spacing="5">
+                            <Label text="User ID to Deactivate" styleClass="field-label"/>
+                            <TextField fx:id="deactivateUserId" promptText="Enter User ID" styleClass="input-field"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <Button id="deactivateSubmitBtn" text="Deactivate" onAction="#handleDeactivateStaff" styleClass="btn-danger"/>
+                            <Button text="Cancel" onAction="#hideStaffForms" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Reactivate Form -->
+                    <VBox fx:id="reactivateForm" styleClass="info-card" spacing="12" maxWidth="380"
+                          managed="false" visible="false">
+                        <Label text="Reactivate Staff Account" styleClass="card-title"/>
+                        <VBox spacing="5">
+                            <Label text="User ID to Reactivate" styleClass="field-label"/>
+                            <TextField fx:id="reactivateUserId" promptText="Enter User ID" styleClass="input-field"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <Button id="reactivateSubmitBtn" text="Reactivate" onAction="#handleReactivateStaff" styleClass="btn-success"/>
+                            <Button text="Cancel" onAction="#hideStaffForms" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+
+                </VBox>
+
+                <!-- ════ WELCOME / HOME PANEL ════ -->
+                <VBox fx:id="panelWelcome" spacing="16">
+                    <Label text="Reports &amp; Catalogue Management" styleClass="welcome-label"/>
+                    <Label text="Select an option from the left sidebar." styleClass="section-subtitle"/>
+                    <FlowPane hgap="16" vgap="16">
+                        <VBox styleClass="info-card" spacing="8" prefWidth="220">
+                            <Label text="Catalogue" styleClass="card-title"/>
+                            <Label text="Add items and update prices." styleClass="guide-text" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="info-card" spacing="8" prefWidth="220">
+                            <Label text="Reports" styleClass="card-title"/>
+                            <Label text="View inventory status and low stock alerts." styleClass="guide-text" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="info-card" spacing="8" prefWidth="220">
+                            <Label text="Transactions" styleClass="card-title"/>
+                            <Label text="Browse transaction history by date range." styleClass="guide-text" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="info-card" spacing="8" prefWidth="220">
+                            <Label text="Staff" styleClass="card-title"/>
+                            <Label text="Create accounts and manage access." styleClass="guide-text" wrapText="true"/>
+                        </VBox>
+                    </FlowPane>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+</BorderPane>

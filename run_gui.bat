@@ -54,7 +54,7 @@ echo.
 
 REM ── Step 2: Copy resources ─────────────────────────────────────────────────
 echo [2/3] Copying FXML and CSS resources...
-xcopy /E /I /Y "%ROOT%\src\app\views" "%OUTDIR%\app\views" >nul
+xcopy /E /I /Y "%ROOT%\src\app\views\*" "%OUTDIR%\app\views\" >nul
 echo   Resources copied.
 echo.
 

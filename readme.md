@@ -31,7 +31,7 @@ del .build_sources.txt
 
 ### 2. Copy FXML/CSS Resources
 ```bat
-xcopy /E /I /Y "src\app\views" "out\app\views"
+xcopy /E /I /Y "src\app\views\*" "out\app\views\"
 ```
 
 ### 3. Launch the Application

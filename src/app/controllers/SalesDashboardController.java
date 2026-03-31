@@ -10,17 +10,23 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import model.Customer;
 import model.TransactionItem;
+import service.CustomerService;
 import service.TransactionService;
 import service.ReportService;
 
 import java.util.List;
+import java.util.Optional;
 
 public class SalesDashboardController {
 
     @FXML private Label transactionIdLabel;
     @FXML private Label staffIdLabel;
     @FXML private Label totalLabel;
+    @FXML private Label subtotalLabel;
+    @FXML private Label discountSummaryLabel;
 
     @FXML private TableView<TransactionItem>             itemsTable;
     @FXML private TableColumn<TransactionItem, String>   colItemCode;
@@ -28,11 +34,18 @@ public class SalesDashboardController {
     @FXML private TableColumn<TransactionItem, Double>   colUnitPrice;
     @FXML private TableColumn<TransactionItem, Double>   colLineTotal;
 
+    // Customer panel controls
+    @FXML private TextField customerPhoneField;
+    @FXML private Label     customerNameLabel;
+    @FXML private Label     availablePointsLabel;
+    @FXML private TextField redeemPointsField;
+    @FXML private Label     discountLabel;
+
     private final TransactionService transactionService = new TransactionService();
+    private final CustomerService    customerService    = new CustomerService();
     private final ReportService      reportService      = new ReportService();
     private final SessionManager     session            = SessionManager.getInstance();
 
-    /** Stores the ID of the most recently FINALIZED transaction — used for receipt printing. */
     private String lastFinalizedTxnId = null;
 
     @FXML
@@ -61,10 +74,145 @@ public class SalesDashboardController {
             return;
         }
         session.setActiveTransactionId(txnId);
-        lastFinalizedTxnId = null;   // new transaction — clear any previous receipt
+        session.setActiveCustomerId(0);
+        session.setActiveCustomerPoints(0);
+        lastFinalizedTxnId = null;
         transactionIdLabel.setText("Active Transaction: " + txnId);
+        clearCustomerPanel();
         refreshTable();
         AlertHelper.showInfo("Transaction Created", "Transaction ID: " + txnId);
+    }
+
+    @FXML
+    private void handleLoadCustomer() {
+        String txnId = requireActiveTransaction();
+        if (txnId == null) return;
+
+        String phone = customerPhoneField.getText();
+        if (phone == null || phone.isBlank()) {
+            AlertHelper.showError("Validation Error", "Please enter a customer phone number.");
+            return;
+        }
+        phone = phone.trim();
+
+        if (!customerService.isValidPhone(phone)) {
+            AlertHelper.showError("Invalid Phone Number",
+                    "Phone number must be exactly 10 digits (numbers only).\n"
+                    + "Entered: \"" + phone + "\"");
+            return;
+        }
+
+        Customer customer = customerService.getCustomerByPhone(phone);
+
+        if (customer == null) {
+            customer = showRegisterDialog(phone);
+            if (customer == null) return;
+        }
+
+        session.setActiveCustomerId(customer.getCustomerId());
+        session.setActiveCustomerPoints(customer.getLoyaltyPoints());
+        customerNameLabel.setText(customer.getName().isBlank() ? "—" : customer.getName());
+        availablePointsLabel.setText(customer.getLoyaltyPoints() + " pts");
+        AlertHelper.showInfo("Customer Loaded",
+                "Customer: " + customer.getName() +
+                "\nPhone: " + customer.getPhone() +
+                "\nLoyalty Points: " + customer.getLoyaltyPoints());
+    }
+
+    /**
+     * Shows a dialog to register a new customer.
+     * Returns the registered Customer or null if cancelled.
+     */
+    private Customer showRegisterDialog(String phone) {
+        Dialog<Customer> dialog = new Dialog<>();
+        dialog.setTitle("Register New Customer");
+        dialog.setHeaderText("Phone: " + phone + "\nCustomer not found. Fill in details to register.");
+
+        ButtonType registerBtn = new ButtonType("Register", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(registerBtn, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        TextField nameField    = new TextField();
+        nameField.setPromptText("Full Name");
+        TextField emailField   = new TextField();
+        emailField.setPromptText("Email (optional)");
+        TextField addressField = new TextField();
+        addressField.setPromptText("Address (optional)");
+
+        grid.add(new Label("Name:"),    0, 0); grid.add(nameField,    1, 0);
+        grid.add(new Label("Email:"),   0, 1); grid.add(emailField,   1, 1);
+        grid.add(new Label("Address:"), 0, 2); grid.add(addressField, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == registerBtn) {
+                String name = nameField.getText().trim();
+                if (name.isEmpty()) return null;
+                return customerService.registerCustomerIfNotExists(
+                        phone, name,
+                        emailField.getText().trim(),
+                        addressField.getText().trim());
+            }
+            return null;
+        });
+
+        Optional<Customer> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() != null) {
+            return result.get();
+        }
+        AlertHelper.showError("Registration Failed", "Customer name is required.");
+        return null;
+    }
+
+    @FXML
+    private void handleApplyRedemption() {
+        int customerId = session.getActiveCustomerId();
+        if (customerId <= 0) {
+            AlertHelper.showError("No Customer", "Please load a customer before redeeming points.");
+            return;
+        }
+
+        String input = redeemPointsField.getText();
+        if (input == null || input.isBlank()) {
+            AlertHelper.showError("Validation Error", "Please enter the number of points to redeem.");
+            return;
+        }
+
+        int points;
+        try {
+            points = Integer.parseInt(input.trim());
+        } catch (NumberFormatException e) {
+            AlertHelper.showError("Validation Error", "Points must be a whole number.");
+            return;
+        }
+
+        if (points < 0) {
+            AlertHelper.showError("Validation Error", "Points cannot be negative.");
+            return;
+        }
+
+        if (!customerService.hasEnoughPoints(customerId, points)) {
+            AlertHelper.showError("Insufficient Points",
+                    "Customer only has " + session.getActiveCustomerPoints() + " points.");
+            return;
+        }
+
+        double discount = customerService.calculateDiscount(points);
+
+        // Calculate subtotal to check discount cap
+        List<TransactionItem> items = itemsTable.getItems();
+        double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
+        if (discount > subtotal) discount = subtotal;
+
+        double finalTotal = subtotal - discount;
+
+        discountLabel.setText("Discount: ₹ " + String.format("%.2f", discount));
+        discountSummaryLabel.setText("- ₹ " + String.format("%.2f", discount));
+        totalLabel.setText(String.format("₹ %.2f", finalTotal));
     }
 
     @FXML
@@ -148,7 +296,6 @@ public class SalesDashboardController {
         String txnId = requireActiveTransaction();
         if (txnId == null) return;
 
-        // Guard 1: transaction must have at least one item
         if (itemsTable.getItems().isEmpty()) {
             AlertHelper.showError("Empty Transaction",
                     "Cannot finalize an empty transaction.\n"
@@ -156,10 +303,9 @@ public class SalesDashboardController {
             return;
         }
 
-        // Guard 2: total bill amount must be greater than zero
-        double total = itemsTable.getItems().stream()
+        double subtotal = itemsTable.getItems().stream()
                 .mapToDouble(TransactionItem::getLineTotal).sum();
-        if (total <= 0.0) {
+        if (subtotal <= 0.0) {
             AlertHelper.showError("Zero Bill Amount",
                     "The total bill amount is ₹ 0.00.\n"
                     + "A transaction cannot be finalized with a zero total.\n"
@@ -167,22 +313,45 @@ public class SalesDashboardController {
             return;
         }
 
+        // Read redemption input
+        int pointsToRedeem = 0;
+        String redeemText = redeemPointsField.getText();
+        if (redeemText != null && !redeemText.isBlank()) {
+            try {
+                pointsToRedeem = Integer.parseInt(redeemText.trim());
+            } catch (NumberFormatException e) {
+                AlertHelper.showError("Validation Error", "Points to redeem must be a whole number.");
+                return;
+            }
+        }
+
+        int customerId = session.getActiveCustomerId();
+        double discount = (customerId > 0) ? customerService.calculateDiscount(pointsToRedeem) : 0.0;
+        if (discount > subtotal) discount = subtotal;
+        double finalTotal = subtotal - discount;
+
         boolean confirmed = AlertHelper.showConfirm("Finalize Transaction",
-                String.format("Finalize transaction %s?\n\nTotal: ₹ %.2f\n\nThis cannot be undone.",
-                        txnId, total));
+                String.format("Finalize transaction %s?%n%nSubtotal:  ₹ %.2f%n"
+                        + "Discount:  ₹ %.2f%nFinal Total: ₹ %.2f%n%nThis cannot be undone.",
+                        txnId, subtotal, discount, finalTotal));
         if (!confirmed) return;
 
-        boolean ok = transactionService.finalizeTransaction(txnId);
+        boolean ok = transactionService.finalizeTransaction(txnId, customerId, pointsToRedeem);
         if (ok) {
-            lastFinalizedTxnId = txnId;   // save for receipt printing
+            lastFinalizedTxnId = txnId;
             session.setActiveTransactionId(null);
+            session.setActiveCustomerId(0);
+            session.setActiveCustomerPoints(0);
             transactionIdLabel.setText("Last Finalized: " + txnId
-                    + String.format("  (₹ %.2f) — Ready to print", total));
+                    + String.format("  (₹ %.2f) — Ready to print", finalTotal));
             itemsTable.setItems(FXCollections.observableArrayList());
+            subtotalLabel.setText("₹ 0.00");
+            discountSummaryLabel.setText("- ₹ 0.00");
             totalLabel.setText("₹ 0.00");
+            clearCustomerPanel();
             AlertHelper.showInfo("Transaction Finalized",
-                    "Transaction " + txnId + " finalized successfully.\n"
-                    + String.format("Grand Total: ₹ %.2f\n\nYou may now print the receipt.", total));
+                    "Transaction " + txnId + " finalized.\n"
+                    + String.format("Final Total: ₹ %.2f\n\nYou may now print the receipt.", finalTotal));
         } else {
             AlertHelper.showError("Error", "Failed to finalize. Ensure the transaction has items.");
         }
@@ -199,11 +368,16 @@ public class SalesDashboardController {
 
         boolean ok = transactionService.abortTransaction(txnId);
         if (ok) {
-            lastFinalizedTxnId = null;   // aborted — no receipt allowed
+            lastFinalizedTxnId = null;
             session.setActiveTransactionId(null);
+            session.setActiveCustomerId(0);
+            session.setActiveCustomerPoints(0);
             transactionIdLabel.setText("No active transaction");
             itemsTable.setItems(FXCollections.observableArrayList());
+            subtotalLabel.setText("₹ 0.00");
+            discountSummaryLabel.setText("- ₹ 0.00");
             totalLabel.setText("₹ 0.00");
+            clearCustomerPanel();
             AlertHelper.showInfo("Aborted", "Transaction aborted. No receipt will be generated.");
         } else {
             AlertHelper.showError("Error", "Failed to abort transaction.");
@@ -212,7 +386,6 @@ public class SalesDashboardController {
 
     @FXML
     private void handlePrintReceipt() {
-        // Block printing if there is still an active (unfinalized) transaction
         if (session.getActiveTransactionId() != null) {
             AlertHelper.showError("Transaction Not Finalized",
                     "The current transaction has not been finalized yet.\n\n"
@@ -220,7 +393,6 @@ public class SalesDashboardController {
             return;
         }
 
-        // Block printing if no transaction has been finalized yet in this session
         if (lastFinalizedTxnId == null || lastFinalizedTxnId.isBlank()) {
             AlertHelper.showError("No Finalized Transaction",
                     "There is no finalized transaction to print.\n\n"
@@ -241,15 +413,40 @@ public class SalesDashboardController {
         String txnId = session.getActiveTransactionId();
         if (txnId == null) {
             itemsTable.setItems(FXCollections.observableArrayList());
+            subtotalLabel.setText("₹ 0.00");
+            discountSummaryLabel.setText("- ₹ 0.00");
             totalLabel.setText("₹ 0.00");
             return;
         }
+
         List<TransactionItem> items = reportService.getSalesLineItemsByTransaction(txnId);
         ObservableList<TransactionItem> obs = FXCollections.observableArrayList(items);
         itemsTable.setItems(obs);
 
-        double total = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
-        totalLabel.setText(String.format("₹ %.2f", total));
+        double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
+        subtotalLabel.setText(String.format("₹ %.2f", subtotal));
+
+        // Re-apply any pending redemption discount
+        int points = 0;
+        String redeemText = redeemPointsField != null ? redeemPointsField.getText() : "";
+        if (redeemText != null && !redeemText.isBlank()) {
+            try { points = Integer.parseInt(redeemText.trim()); }
+            catch (NumberFormatException ignored) { }
+        }
+        double discount = (session.getActiveCustomerId() > 0)
+                ? Math.min(customerService.calculateDiscount(points), subtotal)
+                : 0.0;
+        discountSummaryLabel.setText(String.format("- ₹ %.2f", discount));
+        totalLabel.setText(String.format("₹ %.2f", subtotal - discount));
+    }
+
+    private void clearCustomerPanel() {
+        if (customerPhoneField    != null) customerPhoneField.clear();
+        if (customerNameLabel     != null) customerNameLabel.setText("—");
+        if (availablePointsLabel  != null) availablePointsLabel.setText("—");
+        if (redeemPointsField     != null) redeemPointsField.clear();
+        if (discountLabel         != null) discountLabel.setText("Discount: ₹ 0.00");
+        if (discountSummaryLabel  != null) discountSummaryLabel.setText("- ₹ 0.00");
     }
 
     private String requireActiveTransaction() {

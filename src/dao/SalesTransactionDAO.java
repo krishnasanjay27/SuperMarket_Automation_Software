@@ -11,15 +11,15 @@ import java.util.List;
 public class SalesTransactionDAO {
 
     private static final String SQL_CREATE =
-            "INSERT INTO SalesTransaction (transactionId, transactionDate, totalAmount, status, salesStaffId) " +
-            "VALUES (?, ?, ?, 'ACTIVE', ?)";
+            "INSERT INTO SalesTransaction (transactionId, transactionDate, totalAmount, status, salesStaffId, customerId) " +
+            "VALUES (?, ?, ?, 'ACTIVE', ?, ?)";
 
     private static final String SQL_GET_BY_ID =
-            "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId " +
+            "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId, customerId " +
             "FROM SalesTransaction WHERE transactionId = ?";
 
     private static final String SQL_GET_ACTIVE =
-            "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId " +
+            "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId, customerId " +
             "FROM SalesTransaction WHERE status = 'ACTIVE' ORDER BY transactionDate DESC";
 
     private static final String SQL_FINALIZE =
@@ -34,8 +34,14 @@ public class SalesTransactionDAO {
             "UPDATE SalesTransaction SET totalAmount = ? WHERE transactionId = ?";
 
     private static final String SQL_GET_BY_STAFF =
-            "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId " +
+            "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId, customerId " +
             "FROM SalesTransaction WHERE salesStaffId = ? ORDER BY transactionDate DESC";
+
+    private static final String SQL_SET_CUSTOMER =
+            "UPDATE SalesTransaction SET customerId = ? WHERE transactionId = ?";
+
+    private static final String SQL_GET_CUSTOMER_ID =
+            "SELECT customerId FROM SalesTransaction WHERE transactionId = ?";
 
     public boolean createTransaction(SalesTransaction transaction) {
         boolean success = false;
@@ -51,6 +57,12 @@ public class SalesTransactionDAO {
 
             stmt.setDouble(3, transaction.getTotalAmount());
             stmt.setString(4, transaction.getSalesStaffId());
+
+            if (transaction.getCustomerId() != null) {
+                stmt.setInt(5, transaction.getCustomerId());
+            } else {
+                stmt.setNull(5, Types.INTEGER);
+            }
 
             success = stmt.executeUpdate() > 0;
 
@@ -184,6 +196,48 @@ public class SalesTransactionDAO {
         return success;
     }
 
+    public boolean setCustomerId(String transactionId, int customerId) {
+        boolean success = false;
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SQL_SET_CUSTOMER)) {
+
+            stmt.setInt(1, customerId);
+            stmt.setString(2, transactionId);
+
+            success = stmt.executeUpdate() > 0;
+
+            if (success) {
+                System.out.println("CustomerId=" + customerId + " linked to transaction '" + transactionId + "'.");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("setCustomerId() failed – " + e.getMessage());
+        }
+
+        return success;
+    }
+
+    public Integer getCustomerId(String transactionId) {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SQL_GET_CUSTOMER_ID)) {
+
+            stmt.setString(1, transactionId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int val = rs.getInt("customerId");
+                    return rs.wasNull() ? null : val;
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("getCustomerId() failed – " + e.getMessage());
+        }
+
+        return null;
+    }
+
     public List<SalesTransaction> getTransactionsByStaff(String salesStaffId) {
         List<SalesTransaction> list = new ArrayList<>();
 
@@ -208,7 +262,7 @@ public class SalesTransactionDAO {
     public List<SalesTransaction> getTransactionsByDateRange(LocalDateTime start, LocalDateTime end) {
         List<SalesTransaction> list = new ArrayList<>();
 
-        String sql = "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId " +
+        String sql = "SELECT transactionId, transactionDate, totalAmount, status, salesStaffId, customerId " +
                      "FROM SalesTransaction " +
                      "WHERE transactionDate BETWEEN ? AND ? " +
                      "ORDER BY transactionDate DESC";
@@ -244,6 +298,10 @@ public class SalesTransactionDAO {
         txn.setTotalAmount(rs.getDouble("totalAmount"));
         txn.setStatus(rs.getString("status"));
         txn.setSalesStaffId(rs.getString("salesStaffId"));
+
+        int cid = rs.getInt("customerId");
+        txn.setCustomerId(rs.wasNull() ? null : cid);
+
         return txn;
     }
 }

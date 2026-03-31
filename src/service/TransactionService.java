@@ -1,14 +1,17 @@
 package service;
 
+import dao.BillDAO;
 import dao.InventoryRecordDAO;
 import dao.ItemDAO;
 import dao.SalesTransactionDAO;
 import dao.TransactionItemDAO;
+import model.Bill;
 import model.Item;
 import model.SalesTransaction;
 import model.TransactionItem;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class TransactionService {
 
@@ -16,12 +19,16 @@ public class TransactionService {
     private final TransactionItemDAO  txnItemDAO;
     private final InventoryRecordDAO  inventoryDAO;
     private final ItemDAO             itemDAO;
+    private final BillDAO             billDAO;
+    private final CustomerService     customerService;
 
     public TransactionService() {
-        this.txnDAO      = new SalesTransactionDAO();
-        this.txnItemDAO  = new TransactionItemDAO();
-        this.inventoryDAO = new InventoryRecordDAO();
-        this.itemDAO      = new ItemDAO();
+        this.txnDAO          = new SalesTransactionDAO();
+        this.txnItemDAO      = new TransactionItemDAO();
+        this.inventoryDAO    = new InventoryRecordDAO();
+        this.itemDAO         = new ItemDAO();
+        this.billDAO         = new BillDAO();
+        this.customerService = new CustomerService();
     }
 
     public String createTransaction(String salesStaffId) {
@@ -38,6 +45,7 @@ public class TransactionService {
         txn.setTotalAmount(0.00);
         txn.setStatus("ACTIVE");
         txn.setSalesStaffId(salesStaffId);
+        txn.setCustomerId(null);
 
         boolean created = txnDAO.createTransaction(txn);
         if (created) {
@@ -141,7 +149,29 @@ public class TransactionService {
         return txnItemDAO.removeTransactionItem(transactionItemId);
     }
 
-    public boolean finalizeTransaction(String transactionId) {
+    /**
+     * Finalizes a transaction with optional customer loyalty points.
+     * 
+     * Workflow (Change 6 ordering):
+     * 1. Validate transaction status
+     * 2. Validate pointsToRedeem
+     * 3. Calculate subtotal
+     * 4. Calculate discount (capped at subtotal so finalTotal >= 0)
+     * 5. Assign customerId to transaction
+     * 6. Finalize transaction (DB trigger deducts inventory)
+     * 7. Redeem customer points
+     * 8. Calculate and add earned points
+     * 9. Build Bill with loyaltyPointsEarned
+     * 10. Persist Bill
+     *
+     * @param transactionId  active transaction ID
+     * @param customerId     0 or negative = no customer
+     * @param pointsToRedeem loyalty points the customer wants to use
+     * @return true on success
+     */
+    public boolean finalizeTransaction(String transactionId, int customerId, int pointsToRedeem) {
+
+        // Step 1 – Validate transaction status
         SalesTransaction txn = txnDAO.getTransactionById(transactionId);
         if (txn == null) {
             System.err.println("finalizeTransaction() failed – transaction not found: " + transactionId);
@@ -153,13 +183,84 @@ public class TransactionService {
             return false;
         }
 
-        if (txnItemDAO.getItemsByTransactionId(transactionId).isEmpty()) {
-            System.err.println("finalizeTransaction() failed – transaction '" + transactionId
-                               + "' has no items. Add items before finalizing.");
+        List<TransactionItem> items = txnItemDAO.getItemsByTransactionId(transactionId);
+        if (items.isEmpty()) {
+            System.err.println("finalizeTransaction() failed – no items in transaction '" + transactionId + "'.");
             return false;
         }
 
-        return txnDAO.finalizeTransaction(transactionId);
+        // Step 2 – Validate pointsToRedeem
+        boolean hasCustomer = customerId > 0;
+        if (pointsToRedeem < 0) {
+            System.err.println("finalizeTransaction() failed – pointsToRedeem cannot be negative.");
+            return false;
+        }
+        if (hasCustomer && pointsToRedeem > 0
+                && !customerService.hasEnoughPoints(customerId, pointsToRedeem)) {
+            System.err.println("finalizeTransaction() failed – insufficient loyalty points.");
+            return false;
+        }
+
+        // Step 3 – Calculate subtotal
+        double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
+
+        // Step 4 – Calculate discount; cap at subtotal to prevent negative final total
+        double discount = hasCustomer ? customerService.calculateDiscount(pointsToRedeem) : 0.0;
+        if (discount > subtotal) {
+            discount = subtotal;
+        }
+        double finalTotal = subtotal - discount;
+
+        // Step 5 – Link customer to transaction
+        if (hasCustomer) {
+            txnDAO.setCustomerId(transactionId, customerId);
+        }
+
+        // Step 6 – Finalize transaction (triggers inventory deduction in DB)
+        boolean finalized = txnDAO.finalizeTransaction(transactionId);
+        if (!finalized) {
+            System.err.println("finalizeTransaction() failed – DB finalize step failed.");
+            return false;
+        }
+
+        // Step 7 – Redeem points
+        if (hasCustomer && pointsToRedeem > 0) {
+            customerService.redeemPoints(customerId, pointsToRedeem);
+        }
+
+        // Step 8 – Calculate and award earned points (1 point per ₹100)
+        int earnedPoints = customerService.calculateEarnedPoints(subtotal);
+        if (hasCustomer && earnedPoints > 0) {
+            customerService.addLoyaltyPoints(customerId, earnedPoints);
+        }
+
+        // Step 9 & 10 – Build and persist Bill with all loyalty data
+        Bill bill = new Bill();
+        bill.setTransactionId(transactionId);
+        bill.setGeneratedDate(LocalDateTime.now());
+        bill.setTotalAmount(subtotal);
+        bill.setLoyaltyPointsUsed(pointsToRedeem);
+        bill.setLoyaltyDiscount(discount);
+        bill.setFinalTotal(finalTotal);
+        bill.setLoyaltyPointsEarned(earnedPoints);
+
+        boolean billSaved = billDAO.generateBill(bill);
+        if (!billSaved) {
+            System.err.println("finalizeTransaction() – Bill could not be saved for: " + transactionId);
+        }
+
+        System.out.printf("Finalized: %s | Subtotal=%.2f | Discount=%.2f | Final=%.2f | " +
+                          "PointsUsed=%d | PointsEarned=%d%n",
+                transactionId, subtotal, discount, finalTotal, pointsToRedeem, earnedPoints);
+
+        return true;
+    }
+
+    /**
+     * Backward-compatible overload – finalizes without any customer or loyalty points.
+     */
+    public boolean finalizeTransaction(String transactionId) {
+        return finalizeTransaction(transactionId, 0, 0);
     }
 
     public boolean abortTransaction(String transactionId) {

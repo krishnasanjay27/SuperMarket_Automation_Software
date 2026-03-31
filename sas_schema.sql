@@ -251,3 +251,39 @@ INSERT INTO PriceHistory (itemCode, oldPrice, newPrice, changedBy) VALUES
 
 INSERT INTO Report (reportType, dateRangeStart, dateRangeEnd, generatedBy) VALUES
 ('SALES', '2026-03-01', '2026-03-22', 'MGR001');
+
+-- ============================================================
+-- EXTENSION: Customer Records + Loyalty Points Discount System
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS Customer (
+    customerId    INT           NOT NULL AUTO_INCREMENT,
+    name          VARCHAR(100)  NOT NULL,
+    phone         VARCHAR(10)   NOT NULL,
+    email         VARCHAR(100)  NULL,
+    address       VARCHAR(255)  NULL,
+    loyaltyPoints INT           NOT NULL DEFAULT 0,
+
+    CONSTRAINT pk_Customer         PRIMARY KEY (customerId),
+    CONSTRAINT uq_Customer_Phone   UNIQUE (phone),
+    CONSTRAINT chk_Customer_Phone  CHECK (phone REGEXP '^[0-9]{10}$')
+);
+
+CREATE INDEX idx_Customer_Phone ON Customer (phone);
+
+ALTER TABLE SalesTransaction
+    ADD COLUMN customerId INT NULL,
+    ADD CONSTRAINT fk_SalesTxn_Customer
+        FOREIGN KEY (customerId) REFERENCES Customer (customerId)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE;
+
+ALTER TABLE Bill
+    ADD COLUMN loyaltyPointsUsed   INT    NOT NULL DEFAULT 0,
+    ADD COLUMN loyaltyDiscount     DOUBLE NOT NULL DEFAULT 0.0,
+    ADD COLUMN finalTotal          DOUBLE NOT NULL DEFAULT 0.0,
+    ADD COLUMN loyaltyPointsEarned INT    NOT NULL DEFAULT 0;
+
+
+
+

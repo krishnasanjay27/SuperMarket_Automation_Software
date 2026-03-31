@@ -8,7 +8,7 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="app.controllers.SalesDashboardController"
             styleClass="root-pane"
-            prefWidth="1000" prefHeight="640">
+            prefWidth="1060" prefHeight="700">
 
     <!-- Top Bar -->
     <top>
@@ -59,6 +59,34 @@
                 <Region HBox.hgrow="ALWAYS"/>
             </HBox>
 
+            <!-- Customer Panel Card -->
+            <VBox styleClass="table-card" spacing="10">
+                <Label text="Customer &amp; Loyalty Points" styleClass="card-title"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Phone:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                    <TextField fx:id="customerPhoneField" promptText="Enter customer phone"
+                               prefWidth="180" id="customerPhoneField"/>
+                    <Button id="loadCustomerBtn" text="Load / Register"
+                            onAction="#handleLoadCustomer" styleClass="sidebar-btn"/>
+                </HBox>
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                    <Label text="Customer:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                    <Label fx:id="customerNameLabel" text="—"
+                           style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                    <Label text="  Points Available:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                    <Label fx:id="availablePointsLabel" text="—"
+                           style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#2C7BE5;"/>
+                </HBox>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Redeem Points:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                    <TextField fx:id="redeemPointsField" promptText="0" prefWidth="100" id="redeemPointsField"/>
+                    <Button id="applyRedemptionBtn" text="Apply"
+                            onAction="#handleApplyRedemption" styleClass="sidebar-btn"/>
+                    <Label fx:id="discountLabel" text="Discount: ₹ 0.00"
+                           style="-fx-font-size:13px; -fx-text-fill:#16A34A; -fx-font-weight:bold;"/>
+                </HBox>
+            </VBox>
+
             <!-- Transaction Items Table Card -->
             <VBox styleClass="table-card" spacing="10" VBox.vgrow="ALWAYS">
                 <Label text="Items in Transaction" styleClass="card-title"/>
@@ -76,11 +104,23 @@
                     </placeholder>
                 </TableView>
 
-                <!-- Running Total -->
-                <HBox alignment="CENTER_RIGHT" spacing="10">
-                    <Label text="Transaction Total:" style="-fx-font-size:14px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
-                    <Label fx:id="totalLabel" text="₹ 0.00" styleClass="total-label"/>
-                </HBox>
+                <!-- Running Total Section -->
+                <VBox spacing="4" alignment="CENTER_RIGHT">
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
+                        <Label text="Subtotal:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                        <Label fx:id="subtotalLabel" text="₹ 0.00"
+                               style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
+                        <Label text="Loyalty Discount:" style="-fx-font-size:13px; -fx-text-fill:#16A34A;"/>
+                        <Label fx:id="discountSummaryLabel" text="- ₹ 0.00"
+                               style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"/>
+                    </HBox>
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
+                        <Label text="Final Total:" style="-fx-font-size:14px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                        <Label fx:id="totalLabel" text="₹ 0.00" styleClass="total-label"/>
+                    </HBox>
+                </VBox>
             </VBox>
 
         </VBox>

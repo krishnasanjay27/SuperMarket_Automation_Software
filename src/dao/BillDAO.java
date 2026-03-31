@@ -9,15 +9,18 @@ import java.time.LocalDateTime;
 public class BillDAO {
 
     private static final String SQL_INSERT =
-            "INSERT INTO Bill (transactionId, generatedDate, totalAmount) " +
-            "VALUES (?, ?, ?)";
+            "INSERT INTO Bill (transactionId, generatedDate, totalAmount, " +
+            "loyaltyPointsUsed, loyaltyDiscount, finalTotal, loyaltyPointsEarned) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SQL_GET_BY_TXN =
-            "SELECT billId, transactionId, generatedDate, totalAmount " +
+            "SELECT billId, transactionId, generatedDate, totalAmount, " +
+            "loyaltyPointsUsed, loyaltyDiscount, finalTotal, loyaltyPointsEarned " +
             "FROM Bill WHERE transactionId = ?";
 
     private static final String SQL_GET_BY_ID =
-            "SELECT billId, transactionId, generatedDate, totalAmount " +
+            "SELECT billId, transactionId, generatedDate, totalAmount, " +
+            "loyaltyPointsUsed, loyaltyDiscount, finalTotal, loyaltyPointsEarned " +
             "FROM Bill WHERE billId = ?";
 
     public boolean generateBill(Bill bill) {
@@ -33,6 +36,10 @@ public class BillDAO {
                                  ? bill.getGeneratedDate() : LocalDateTime.now();
             stmt.setTimestamp(2, Timestamp.valueOf(date));
             stmt.setDouble(3, bill.getTotalAmount());
+            stmt.setInt(4, bill.getLoyaltyPointsUsed());
+            stmt.setDouble(5, bill.getLoyaltyDiscount());
+            stmt.setDouble(6, bill.getFinalTotal());
+            stmt.setInt(7, bill.getLoyaltyPointsEarned());
 
             success = stmt.executeUpdate() > 0;
 
@@ -108,6 +115,10 @@ public class BillDAO {
         }
 
         bill.setTotalAmount(rs.getDouble("totalAmount"));
+        bill.setLoyaltyPointsUsed(rs.getInt("loyaltyPointsUsed"));
+        bill.setLoyaltyDiscount(rs.getDouble("loyaltyDiscount"));
+        bill.setFinalTotal(rs.getDouble("finalTotal"));
+        bill.setLoyaltyPointsEarned(rs.getInt("loyaltyPointsEarned"));
         return bill;
     }
 }

@@ -7,6 +7,8 @@ public class SessionManager {
     private String userId;
     private String role;
     private String activeTransactionId;
+    private int    activeCustomerId;
+    private int    activeCustomerPoints;
 
     private SessionManager() { }
 
@@ -23,12 +25,20 @@ public class SessionManager {
     public String getRole()                            { return role; }
     public void   setRole(String role)                 { this.role = role; }
 
-    public String getActiveTransactionId()                                    { return activeTransactionId; }
-    public void   setActiveTransactionId(String activeTransactionId)          { this.activeTransactionId = activeTransactionId; }
+    public String getActiveTransactionId()                                   { return activeTransactionId; }
+    public void   setActiveTransactionId(String activeTransactionId)         { this.activeTransactionId = activeTransactionId; }
+
+    public int  getActiveCustomerId()                                        { return activeCustomerId; }
+    public void setActiveCustomerId(int activeCustomerId)                    { this.activeCustomerId = activeCustomerId; }
+
+    public int  getActiveCustomerPoints()                                    { return activeCustomerPoints; }
+    public void setActiveCustomerPoints(int activeCustomerPoints)            { this.activeCustomerPoints = activeCustomerPoints; }
 
     public void clear() {
-        this.userId              = null;
-        this.role                = null;
-        this.activeTransactionId = null;
+        this.userId               = null;
+        this.role                 = null;
+        this.activeTransactionId  = null;
+        this.activeCustomerId     = 0;
+        this.activeCustomerPoints = 0;
     }
 }

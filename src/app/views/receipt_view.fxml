@@ -8,7 +8,7 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="app.controllers.ReceiptController"
             styleClass="root-pane"
-            prefWidth="680" prefHeight="640">
+            prefWidth="720" prefHeight="700">
 
     <!-- Top Bar -->
     <top>
@@ -49,13 +49,16 @@
 
                         <Label text="Status:" styleClass="field-label" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
                         <Label fx:id="receiptStatus" text="—" styleClass="guide-text" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                        <Label text="Customer:" styleClass="field-label" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <Label fx:id="receiptCustomerName" text="—" styleClass="guide-text" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
                     </GridPane>
 
                     <Separator/>
 
                     <!-- Items Table -->
                     <Label text="Purchased Items" styleClass="card-title"/>
-                    <TableView fx:id="receiptItemsTable" prefHeight="280" maxWidth="Infinity">
+                    <TableView fx:id="receiptItemsTable" prefHeight="220" maxWidth="Infinity">
                         <columns>
                             <TableColumn fx:id="rColItemCode"  text="Item Code"  prefWidth="150"/>
                             <TableColumn fx:id="rColQty"       text="Quantity"   prefWidth="100"/>
@@ -67,11 +70,33 @@
 
                     <Separator/>
 
-                    <!-- Grand Total -->
-                    <HBox alignment="CENTER_RIGHT" spacing="16">
-                        <Label text="GRAND TOTAL:" style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
-                        <Label fx:id="receiptTotal" text="₹ 0.00" styleClass="receipt-total"/>
-                    </HBox>
+                    <!-- Bill Breakdown -->
+                    <VBox spacing="6">
+                        <HBox alignment="CENTER_RIGHT" spacing="16">
+                            <Label text="Subtotal:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                            <Label fx:id="receiptSubtotal" text="₹ 0.00"
+                                   style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="16">
+                            <Label text="Points Used:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                            <Label fx:id="receiptPointsUsed" text="0"
+                                   style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#2C7BE5;"/>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="16">
+                            <Label text="Discount:" style="-fx-font-size:13px; -fx-text-fill:#16A34A;"/>
+                            <Label fx:id="receiptDiscount" text="- ₹ 0.00"
+                                   style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"/>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="16">
+                            <Label text="FINAL TOTAL:" style="-fx-font-size:16px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                            <Label fx:id="receiptTotal" text="₹ 0.00" styleClass="receipt-total"/>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="16">
+                            <Label text="Points Earned:" style="-fx-font-size:13px; -fx-text-fill:#F59E0B;"/>
+                            <Label fx:id="receiptPointsEarned" text="0 pts"
+                                   style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#F59E0B;"/>
+                        </HBox>
+                    </VBox>
 
                     <!-- Footer -->
                     <VBox alignment="CENTER" spacing="4">

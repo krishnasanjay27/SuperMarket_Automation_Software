@@ -8,8 +8,12 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import model.Bill;
+import model.Customer;
 import model.SalesTransaction;
 import model.TransactionItem;
+import service.BillService;
+import service.CustomerService;
 import service.ReportService;
 import dao.SalesTransactionDAO;
 
@@ -22,7 +26,12 @@ public class ReceiptController {
     @FXML private Label receiptDate;
     @FXML private Label receiptStaffId;
     @FXML private Label receiptStatus;
+    @FXML private Label receiptCustomerName;
+    @FXML private Label receiptSubtotal;
+    @FXML private Label receiptPointsUsed;
+    @FXML private Label receiptDiscount;
     @FXML private Label receiptTotal;
+    @FXML private Label receiptPointsEarned;
 
     @FXML private TableView<TransactionItem>            receiptItemsTable;
     @FXML private TableColumn<TransactionItem, String>  rColItemCode;
@@ -30,8 +39,11 @@ public class ReceiptController {
     @FXML private TableColumn<TransactionItem, Double>  rColUnitPrice;
     @FXML private TableColumn<TransactionItem, Double>  rColLineTotal;
 
-    private final ReportService       reportService = new ReportService();
-    private final SalesTransactionDAO txnDAO        = new SalesTransactionDAO();
+    private final ReportService       reportService   = new ReportService();
+    private final BillService         billService     = new BillService();
+    private final CustomerService     customerService = new CustomerService();
+    private final SalesTransactionDAO txnDAO          = new SalesTransactionDAO();
+
     private static final DateTimeFormatter DTF =
             DateTimeFormatter.ofPattern("dd-MMM-yyyy  HH:mm");
 
@@ -48,6 +60,7 @@ public class ReceiptController {
      * Populates all receipt fields with data from the database.
      */
     public void loadReceipt(String txnId) {
+        // Load transaction meta
         SalesTransaction txn = txnDAO.getTransactionById(txnId);
         if (txn != null) {
             receiptTxnId.setText(txn.getTransactionId());
@@ -55,18 +68,47 @@ public class ReceiptController {
                     ? txn.getTransactionDate().format(DTF) : "—");
             receiptStaffId.setText(txn.getSalesStaffId());
             receiptStatus.setText(txn.getStatus());
+
+            // Fetch customer by ID (Change 4: use getCustomerById instead of phone)
+            Integer customerId = txnDAO.getCustomerId(txnId);
+            if (customerId != null && customerId > 0) {
+                Customer customer = customerService.getCustomerById(customerId);
+                if (customer != null) {
+                    receiptCustomerName.setText(customer.getName() + " (" + customer.getPhone() + ")");
+                } else {
+                    receiptCustomerName.setText("—");
+                }
+            } else {
+                receiptCustomerName.setText("Walk-in Customer");
+            }
         } else {
             receiptTxnId.setText(txnId);
             receiptDate.setText("—");
             receiptStaffId.setText(SessionManager.getInstance().getUserId());
             receiptStatus.setText("UNKNOWN");
+            receiptCustomerName.setText("—");
         }
 
+        // Load items
         List<TransactionItem> items = reportService.getSalesLineItemsByTransaction(txnId);
         receiptItemsTable.setItems(FXCollections.observableArrayList(items));
+        double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
+        receiptSubtotal.setText(String.format("₹ %.2f", subtotal));
 
-        double total = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
-        receiptTotal.setText(String.format("₹ %.2f", total));
+        // Load bill for loyalty data
+        Bill bill = billService.getBillByTransactionId(txnId);
+        if (bill != null) {
+            receiptPointsUsed.setText(bill.getLoyaltyPointsUsed() + " pts");
+            receiptDiscount.setText(String.format("- ₹ %.2f", bill.getLoyaltyDiscount()));
+            receiptTotal.setText(String.format("₹ %.2f", bill.getFinalTotal()));
+            receiptPointsEarned.setText(bill.getLoyaltyPointsEarned() + " pts");
+        } else {
+            // Fallback: bill not yet generated or legacy transaction
+            receiptPointsUsed.setText("0 pts");
+            receiptDiscount.setText("- ₹ 0.00");
+            receiptTotal.setText(String.format("₹ %.2f", subtotal));
+            receiptPointsEarned.setText("0 pts");
+        }
     }
 
     @FXML
@@ -79,6 +121,7 @@ public class ReceiptController {
         System.out.printf("  Date        : %s%n", receiptDate.getText());
         System.out.printf("  Staff       : %s%n", receiptStaffId.getText());
         System.out.printf("  Status      : %s%n", receiptStatus.getText());
+        System.out.printf("  Customer    : %s%n", receiptCustomerName.getText());
         System.out.println("----------------------------------------");
         System.out.printf("  %-14s %6s %10s %10s%n",
                 "Item Code", "Qty", "Unit (₹)", "Total (₹)");
@@ -89,7 +132,11 @@ public class ReceiptController {
                     item.getUnitPrice(), item.getLineTotal());
         }
         System.out.println("  " + "=".repeat(44));
-        System.out.printf("  %-32s %s%n", "GRAND TOTAL:", receiptTotal.getText());
+        System.out.printf("  %-32s %s%n", "Subtotal:",      receiptSubtotal.getText());
+        System.out.printf("  %-32s %s%n", "Points Used:",   receiptPointsUsed.getText());
+        System.out.printf("  %-32s %s%n", "Discount:",      receiptDiscount.getText());
+        System.out.printf("  %-32s %s%n", "FINAL TOTAL:", receiptTotal.getText());
+        System.out.printf("  %-32s %s%n", "Points Earned:", receiptPointsEarned.getText());
         System.out.println("========================================");
         System.out.println("       Thank you for your purchase!     ");
         System.out.println("========================================\n");

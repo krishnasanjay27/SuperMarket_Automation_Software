@@ -179,14 +179,21 @@ public class Main {
 
                 // ----------------------------------------------------------
                 case 3 -> {
-                    printOp("ReportService.getItemsBelowReorderLevel()", "no inputs");
-                    List<Item> low = rptService.getItemsBelowReorderLevel();
+                    printOp("ReportService.getLowStockItemsWithVendor()", "no inputs");
+                    List<model.LowStockVendorAlert> low = rptService.getLowStockItemsWithVendor();
                     if (low.isEmpty()) {
                         printPass("All items are sufficiently stocked.");
                     } else {
                         printPass("Low-stock items found: " + low.size());
-                        printItemHeader();
-                        low.forEach(Main::printItemRow);
+                        System.out.printf("  %-25s %-10s %-10s %-20s %-15s%n",
+                            "ItemName", "Stock", "Reorder", "Vendor", "Phone");
+                        System.out.println("  " + "-".repeat(85));
+                        for (model.LowStockVendorAlert alert : low) {
+                            System.out.printf("  %-25s %-10d %-10d %-20s %-15s%n",
+                                alert.getItemName(), alert.getStockLevel(), alert.getReorderLevel(),
+                                alert.getVendorName() != null ? alert.getVendorName() : "N/A",
+                                alert.getPhone() != null ? alert.getPhone() : "N/A");
+                        }
                     }
                 }
 

@@ -29,8 +29,9 @@
             <padding><Insets top="20" right="14" bottom="20" left="14"/></padding>
 
             <Label text="CATALOGUE" styleClass="sidebar-section"/>
-            <Button id="addItemNavBtn"       text="+ Add New Item"        onAction="#showAddItem"          styleClass="sidebar-btn" maxWidth="Infinity"/>
-            <Button id="updatePriceNavBtn"   text="💲 Update Item Price"   onAction="#showUpdatePrice"      styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="addItemNavBtn"         text="+ Add New Item"          onAction="#showAddItem"          styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="updatePriceNavBtn"     text="💲 Update Item Price"     onAction="#showUpdatePrice"      styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="updateItemVendorNavBtn" text="🏢 Update Item Vendor"   onAction="#showUpdateItemVendor" styleClass="sidebar-btn" maxWidth="Infinity"/>
 
             <Separator/>
 
@@ -48,6 +49,11 @@
 
             <Label text="STAFF" styleClass="sidebar-section"/>
             <Button id="staffMgmtNavBtn"     text="👥 Staff Management"     onAction="#showStaffManagement" styleClass="sidebar-btn" maxWidth="Infinity"/>
+
+            <Separator/>
+
+            <Label text="VENDOR" styleClass="sidebar-section"/>
+            <Button id="vendorMgmtNavBtn"    text="🏢 Vendor Management"    onAction="#showVendorManagement" styleClass="sidebar-btn" maxWidth="Infinity"/>
         </VBox>
     </left>
 
@@ -91,6 +97,10 @@
                                 <Label text="Initial Stock" styleClass="field-label"/>
                                 <TextField fx:id="aiInitialStock" promptText="e.g. 100" styleClass="input-field" prefWidth="250"/>
                             </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                                <Label text="Select Vendor" styleClass="field-label"/>
+                                <ComboBox fx:id="aiVendorCombo" promptText="Select Vendor (Optional)" prefWidth="250"/>
+                            </VBox>
                         </GridPane>
                         <HBox spacing="10">
                             <Button id="aiSubmitBtn" text="Add Item" onAction="#handleAddNewItem" styleClass="btn-primary"/>
@@ -119,6 +129,26 @@
                     </VBox>
                 </VBox>
 
+                <!-- ════ UPDATE ITEM VENDOR PANEL ════ -->
+                <VBox fx:id="panelUpdateItemVendor" spacing="14" managed="false" visible="false">
+                    <Label text="Update Item Vendor" styleClass="welcome-label"/>
+                    <Label text="Assign or change the supplier for an existing catalogue item." styleClass="section-subtitle"/>
+                    <VBox styleClass="info-card" spacing="14" maxWidth="420">
+                        <VBox spacing="5">
+                            <Label text="Item Code" styleClass="field-label"/>
+                            <TextField fx:id="uivItemCode" promptText="e.g. ITEM001" styleClass="input-field"/>
+                        </VBox>
+                        <VBox spacing="5">
+                            <Label text="Select New Vendor" styleClass="field-label"/>
+                            <ComboBox fx:id="uivVendorCombo" promptText="Select Vendor" prefWidth="250"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <Button id="uivSubmitBtn" text="Update Vendor Link" onAction="#handleUpdateItemVendor" styleClass="btn-primary"/>
+                            <Button text="Clear" onAction="#handleClearUpdateItemVendor" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
                 <!-- ════ INVENTORY STATUS PANEL ════ -->
                 <VBox fx:id="panelInventoryStatus" spacing="14" managed="false" visible="false">
                     <Label text="Inventory Status" styleClass="welcome-label"/>
@@ -130,10 +160,12 @@
                     <VBox styleClass="table-card" spacing="8">
                         <TableView fx:id="inventoryTable" prefHeight="400" maxWidth="Infinity">
                             <columns>
-                                <TableColumn fx:id="invItemCodeCol"    text="Item Code"   prefWidth="160"/>
-                                <TableColumn fx:id="invStockCol"       text="Stock Level" prefWidth="130"/>
-                                <TableColumn fx:id="invUpdatedByCol"   text="Updated By"  prefWidth="150"/>
-                                <TableColumn fx:id="invLastUpdatedCol" text="Last Updated" prefWidth="220"/>
+                                <TableColumn fx:id="invItemCodeCol"    text="Item Code"   prefWidth="100"/>
+                                <TableColumn fx:id="invItemNameCol"    text="Item Name"   prefWidth="200"/>
+                                <TableColumn fx:id="invStockCol"       text="Stock"       prefWidth="80"/>
+                                <TableColumn fx:id="invVendorCol"      text="Vendor"      prefWidth="140"/>
+                                <TableColumn fx:id="invUpdatedByCol"   text="Updated By"  prefWidth="100"/>
+                                <TableColumn fx:id="invLastUpdatedCol" text="Last Updated" prefWidth="180"/>
                             </columns>
                             <placeholder><Label text="Click 'Refresh' to load inventory data." style="-fx-text-fill:#ADB5BD;"/></placeholder>
                         </TableView>
@@ -151,12 +183,13 @@
                     <VBox styleClass="table-card" spacing="8">
                         <TableView fx:id="lowStockTable" prefHeight="360" maxWidth="Infinity">
                             <columns>
-                                <TableColumn fx:id="lsItemCodeCol" text="Item Code"   prefWidth="150"/>
-                                <TableColumn fx:id="lsItemNameCol" text="Item Name"   prefWidth="200"/>
-                                <TableColumn fx:id="lsReorderCol"  text="Reorder Lvl" prefWidth="130"/>
-                                <TableColumn fx:id="lsCategoryCol" text="Category"    prefWidth="150"/>
+                                <TableColumn fx:id="lsItemNameCol"    text="Item Name"   prefWidth="220"/>
+                                <TableColumn fx:id="lsStockCol"       text="Stock"       prefWidth="100"/>
+                                <TableColumn fx:id="lsReorderCol"     text="Reorder Lvl" prefWidth="100"/>
+                                <TableColumn fx:id="lsVendorNameCol"  text="Vendor"      prefWidth="180"/>
+                                <TableColumn fx:id="lsVendorPhoneCol" text="Phone"       prefWidth="130"/>
                             </columns>
-                            <placeholder><Label text="Click 'Refresh' to check low stock." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                            <placeholder><Label text="Click 'Refresh' to check low stock with vendor contacts." style="-fx-text-fill:#ADB5BD;"/></placeholder>
                         </TableView>
                     </VBox>
                 </VBox>
@@ -322,7 +355,111 @@
                             <Label text="Staff" styleClass="card-title"/>
                             <Label text="Create accounts and manage access." styleClass="guide-text" wrapText="true"/>
                         </VBox>
+                        <VBox styleClass="info-card" spacing="8" prefWidth="220">
+                            <Label text="Vendors" styleClass="card-title"/>
+                            <Label text="Manage suppliers and view Low Stock Alerts." styleClass="guide-text" wrapText="true"/>
+                        </VBox>
                     </FlowPane>
+                </VBox>
+
+                <!-- ════ VENDOR MANAGEMENT PANEL ════ -->
+                <VBox fx:id="panelVendorManagement" spacing="16" managed="false" visible="false">
+                    <Label text="Vendor Management" styleClass="welcome-label"/>
+                    <Label text="Manage product suppliers completely independent of transaction logic." styleClass="section-subtitle"/>
+
+                    <!-- Action bar -->
+                    <HBox spacing="10">
+                        <Button id="viewVendorsBtn"       text="📋 View All Vendors"  onAction="#handleViewAllVendors"  styleClass="btn-primary"/>
+                        <Button id="addVendorBtn"         text="+ Add Vendor"         onAction="#showAddVendor"         styleClass="btn-secondary"/>
+                        <Button id="updateVendorBtn"      text="✏️ Update Vendor"      onAction="#showUpdateVendor"      styleClass="btn-secondary"/>
+                        <Button id="deleteVendorBtn"      text="✖ Delete Vendor"      onAction="#showDeleteVendor"      styleClass="btn-danger"/>
+                    </HBox>
+
+                    <!-- Vendors Table -->
+                    <VBox styleClass="table-card" spacing="8">
+                        <Label text="All Vendor Accounts" styleClass="card-title"/>
+                        <TableView fx:id="vendorTable" prefHeight="280" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="vIdCol"      text="Vendor ID"  prefWidth="100"/>
+                                <TableColumn fx:id="vNameCol"    text="Name"       prefWidth="180"/>
+                                <TableColumn fx:id="vPhoneCol"   text="Phone"      prefWidth="140"/>
+                                <TableColumn fx:id="vEmailCol"   text="Email"      prefWidth="180"/>
+                                <TableColumn fx:id="vAddressCol" text="Address"    prefWidth="220"/>
+                            </columns>
+                            <placeholder><Label text="Click 'View All Vendors'." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Add Vendor Form -->
+                    <VBox fx:id="addVendorForm" styleClass="info-card" spacing="12" maxWidth="480"
+                          managed="false" visible="false">
+                        <Label text="Add New Vendor" styleClass="card-title"/>
+                        <GridPane hgap="16" vgap="12">
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Vendor Name" styleClass="field-label"/>
+                                <TextField fx:id="newVendorName" promptText="Company Name" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="Phone (10 digits)" styleClass="field-label"/>
+                                <TextField fx:id="newVendorPhone" promptText="Phone Number" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="Email" styleClass="field-label"/>
+                                <TextField fx:id="newVendorEmail" promptText="Email Address" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="Address" styleClass="field-label"/>
+                                <TextField fx:id="newVendorAddress" promptText="Full Address" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                        </GridPane>
+                        <HBox spacing="10">
+                            <Button text="Add Vendor" onAction="#handleAddVendor" styleClass="btn-success"/>
+                            <Button text="Cancel" onAction="#hideVendorForms" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Update Vendor Form -->
+                    <VBox fx:id="updateVendorForm" styleClass="info-card" spacing="12" maxWidth="480"
+                          managed="false" visible="false">
+                        <Label text="Update Vendor" styleClass="card-title"/>
+                        <Label text="Vendor Name and ID cannot be changed. Only contact info can be updated." style="-fx-text-fill:#6C757D; -fx-font-size:12px;"/>
+                        <GridPane hgap="16" vgap="12">
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                                <Label text="Vendor ID" styleClass="field-label"/>
+                                <TextField fx:id="updVendorId" promptText="e.g. 1" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <Label text="New Phone (10 digits)" styleClass="field-label"/>
+                                <TextField fx:id="updVendorPhone" promptText="Phone Number" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                                <Label text="New Email" styleClass="field-label"/>
+                                <TextField fx:id="updVendorEmail" promptText="Email Address" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <Label text="New Address" styleClass="field-label"/>
+                                <TextField fx:id="updVendorAddress" promptText="Full Address" styleClass="input-field" prefWidth="200"/>
+                            </VBox>
+                        </GridPane>
+                        <HBox spacing="10">
+                            <Button text="Update Vendor" onAction="#handleUpdateVendor" styleClass="btn-primary"/>
+                            <Button text="Cancel" onAction="#hideVendorForms" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Delete Form -->
+                    <VBox fx:id="deleteVendorForm" styleClass="info-card" spacing="12" maxWidth="380"
+                          managed="false" visible="false">
+                        <Label text="Delete Vendor" styleClass="card-title"/>
+                        <VBox spacing="5">
+                            <Label text="Vendor ID to Delete" styleClass="field-label"/>
+                            <TextField fx:id="deleteVendorId" promptText="Enter Vendor ID" styleClass="input-field"/>
+                        </VBox>
+                        <HBox spacing="10">
+                            <Button text="Delete" onAction="#handleDeleteVendor" styleClass="btn-danger"/>
+                            <Button text="Cancel" onAction="#hideVendorForms" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
                 </VBox>
 
             </VBox>

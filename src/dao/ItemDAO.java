@@ -1,7 +1,9 @@
 package dao;
 
 import config.DBConnection;
+import config.DBConnection;
 import model.Item;
+import model.LowStockVendorAlert;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -11,15 +13,15 @@ import java.util.List;
 public class ItemDAO {
 
     private static final String SQL_ADD_ITEM =
-            "INSERT INTO Item (itemCode, itemName, price, costPrice, reorderLevel, category, created_at) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO Item (itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SQL_GET_BY_CODE =
-            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, created_at " +
+            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at " +
             "FROM Item WHERE itemCode = ?";
 
     private static final String SQL_GET_ALL =
-            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, created_at " +
+            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at " +
             "FROM Item ORDER BY category, itemName";
 
     private static final String SQL_UPDATE_PRICE =
@@ -44,9 +46,15 @@ public class ItemDAO {
                               ? item.getCategory() : "General";
             stmt.setString(6, category);
 
+            if (item.getVendorId() != null) {
+                stmt.setInt(7, item.getVendorId());
+            } else {
+                stmt.setNull(7, Types.INTEGER);
+            }
+
             LocalDateTime createdAt = (item.getCreatedAt() != null)
                                       ? item.getCreatedAt() : LocalDateTime.now();
-            stmt.setTimestamp(7, Timestamp.valueOf(createdAt));
+            stmt.setTimestamp(8, Timestamp.valueOf(createdAt));
 
             success = stmt.executeUpdate() > 0;
 
@@ -162,7 +170,7 @@ public class ItemDAO {
     public boolean updateItem(Item item) {
         boolean success = false;
 
-        String sql = "UPDATE Item SET itemName=?, price=?, costPrice=?, reorderLevel=?, category=? WHERE itemCode=?";
+        String sql = "UPDATE Item SET itemName=?, price=?, costPrice=?, reorderLevel=?, category=?, vendorId=? WHERE itemCode=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -172,7 +180,14 @@ public class ItemDAO {
             stmt.setDouble(3, item.getCostPrice());
             stmt.setInt(4, item.getReorderLevel());
             stmt.setString(5, item.getCategory());
-            stmt.setString(6, item.getItemCode());
+            
+            if (item.getVendorId() != null) {
+                stmt.setInt(6, item.getVendorId());
+            } else {
+                stmt.setNull(6, Types.INTEGER);
+            }
+            
+            stmt.setString(7, item.getItemCode());
 
             success = stmt.executeUpdate() > 0;
 
@@ -186,7 +201,7 @@ public class ItemDAO {
     public List<Item> searchItemsByName(String keyword) {
         List<Item> items = new ArrayList<>();
 
-        String sql = "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, created_at " +
+        String sql = "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at " +
                      "FROM Item WHERE itemName LIKE ? ORDER BY itemName";
 
         try (Connection conn = DBConnection.getConnection();
@@ -216,11 +231,46 @@ public class ItemDAO {
         item.setReorderLevel(rs.getInt("reorderLevel"));
         item.setCategory(rs.getString("category"));
 
+        int vendorId = rs.getInt("vendorId");
+        item.setVendorId(rs.wasNull() ? null : vendorId);
+
         Timestamp ts = rs.getTimestamp("created_at");
         if (ts != null) {
             item.setCreatedAt(ts.toLocalDateTime());
         }
 
         return item;
+    }
+
+    public List<LowStockVendorAlert> getLowStockItemsWithVendor() {
+        List<LowStockVendorAlert> alerts = new ArrayList<>();
+        String sql = "SELECT " +
+                     "    i.itemName, " +
+                     "    ir.stockLevel, " +
+                     "    i.reorderLevel, " +
+                     "    v.vendorName, " +
+                     "    v.phone " +
+                     "FROM Item i " +
+                     "JOIN InventoryRecord ir ON i.itemCode = ir.itemCode " +
+                     "LEFT JOIN Vendor v ON i.vendorId = v.vendorId " +
+                     "WHERE ir.stockLevel < i.reorderLevel";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                LowStockVendorAlert alert = new LowStockVendorAlert();
+                alert.setItemName(rs.getString("itemName"));
+                alert.setStockLevel(rs.getInt("stockLevel"));
+                alert.setReorderLevel(rs.getInt("reorderLevel"));
+                alert.setVendorName(rs.getString("vendorName"));
+                alert.setPhone(rs.getString("phone"));
+                alerts.add(alert);
+            }
+        } catch (SQLException e) {
+            System.err.println("getLowStockItemsWithVendor() failed - " + e.getMessage());
+        }
+        return alerts;
     }
 }

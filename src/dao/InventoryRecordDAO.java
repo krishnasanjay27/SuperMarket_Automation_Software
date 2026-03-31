@@ -155,6 +155,42 @@ public class InventoryRecordDAO {
         return list;
     }
 
+    public List<model.InventoryVendorStatus> getInventoryStatusWithVendor() {
+        List<model.InventoryVendorStatus> list = new ArrayList<>();
+
+        String sql = "SELECT ir.itemCode, i.itemName, ir.stockLevel, v.vendorName, ir.lastUpdated, ir.updatedBy " +
+                     "FROM InventoryRecord ir " +
+                     "JOIN Item i ON ir.itemCode = i.itemCode " +
+                     "LEFT JOIN Vendor v ON i.vendorId = v.vendorId " +
+                     "ORDER BY ir.itemCode";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                model.InventoryVendorStatus status = new model.InventoryVendorStatus();
+                status.setItemCode(rs.getString("itemCode"));
+                status.setItemName(rs.getString("itemName"));
+                status.setStockLevel(rs.getInt("stockLevel"));
+                status.setVendorName(rs.getString("vendorName"));
+                
+                Timestamp ts = rs.getTimestamp("lastUpdated");
+                if (ts != null) {
+                    status.setLastUpdated(ts.toLocalDateTime());
+                }
+                
+                status.setUpdatedBy(rs.getString("updatedBy"));
+                list.add(status);
+            }
+
+        } catch (SQLException e) {
+            System.err.println("getInventoryStatusWithVendor() failed – " + e.getMessage());
+        }
+
+        return list;
+    }
+
     private InventoryRecord mapRow(ResultSet rs) throws SQLException {
         InventoryRecord record = new InventoryRecord();
         record.setInventoryId(rs.getInt("inventoryId"));

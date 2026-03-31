@@ -52,28 +52,12 @@ public class ReportService {
         return txnDAO.getTransactionsByStaff(staffId);
     }
 
-    public List<Item> getItemsBelowReorderLevel() {
-        List<Item> lowStockItems = new ArrayList<>();
-
-        List<Item> allItems = itemDAO.getAllItems();
-        if (allItems.isEmpty()) {
-            System.out.println("getItemsBelowReorderLevel() – no items found in catalogue.");
-            return lowStockItems;
+    public List<model.LowStockVendorAlert> getLowStockItemsWithVendor() {
+        List<model.LowStockVendorAlert> alerts = itemDAO.getLowStockItemsWithVendor();
+        if (alerts.isEmpty()) {
+            System.out.println("getLowStockItemsWithVendor() – no items below reorder level.");
         }
-
-        for (Item item : allItems) {
-            int stock = inventoryDAO.getStockLevel(item.getItemCode());
-            int effectiveStock = (stock < 0) ? 0 : stock;
-
-            if (effectiveStock <= item.getReorderLevel()) {
-                lowStockItems.add(item);
-                System.out.println("Low stock: '" + item.getItemCode()
-                                   + "' – Stock: " + effectiveStock
-                                   + ", Reorder Level: " + item.getReorderLevel());
-            }
-        }
-
-        return lowStockItems;
+        return alerts;
     }
 
     public List<InventoryRecord> getInventoryStatus() {
@@ -83,6 +67,14 @@ public class ReportService {
             System.out.println("getInventoryStatus() – inventory table is empty.");
         }
 
+        return records;
+    }
+
+    public List<model.InventoryVendorStatus> getInventoryStatusWithVendor() {
+        List<model.InventoryVendorStatus> records = inventoryDAO.getInventoryStatusWithVendor();
+        if (records.isEmpty()) {
+            System.out.println("getInventoryStatusWithVendor() – inventory table is empty.");
+        }
         return records;
     }
 

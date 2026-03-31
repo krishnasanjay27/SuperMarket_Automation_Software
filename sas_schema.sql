@@ -284,6 +284,31 @@ ALTER TABLE Bill
     ADD COLUMN finalTotal          DOUBLE NOT NULL DEFAULT 0.0,
     ADD COLUMN loyaltyPointsEarned INT    NOT NULL DEFAULT 0;
 
+-- ============================================================
+-- EXTENSION: Vendor Management System
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS Vendor (
+    vendorId   INT          NOT NULL AUTO_INCREMENT,
+    vendorName VARCHAR(100) NOT NULL,
+    phone      VARCHAR(10)  NOT NULL,
+    email      VARCHAR(100) NULL,
+    address    VARCHAR(255) NULL,
+    
+    CONSTRAINT pk_Vendor       PRIMARY KEY (vendorId),
+    CONSTRAINT uq_Vendor_Phone UNIQUE (phone),
+    CONSTRAINT chk_Vendor_Phone CHECK (phone REGEXP '^[0-9]{10}$')
+);
+
+ALTER TABLE Item
+    ADD COLUMN vendorId INT NULL,
+    ADD CONSTRAINT fk_Item_Vendor
+        FOREIGN KEY (vendorId) REFERENCES Vendor (vendorId)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE;
+
+CREATE INDEX idx_Item_Vendor ON Item (vendorId);
+
 
 
 

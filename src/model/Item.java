@@ -11,6 +11,7 @@ public class Item {
     private int           reorderLevel;
     private String        category;
     private LocalDateTime createdAt;
+    private Integer       vendorId;
 
     public Item() { }
 
@@ -45,6 +46,9 @@ public class Item {
 
     public LocalDateTime getCreatedAt()                        { return createdAt; }
     public void          setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Integer getVendorId()                               { return vendorId; }
+    public void    setVendorId(Integer vendorId)               { this.vendorId = vendorId; }
 
     @Override
     public String toString() {

@@ -14,7 +14,9 @@ import javafx.scene.layout.VBox;
 import model.*;
 import service.AuthService;
 import service.InventoryService;
+import service.ItemService;
 import service.ReportService;
+import service.VendorService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +30,7 @@ public class ManagerDashboardController {
     @FXML private VBox   panelWelcome;
     @FXML private VBox   panelAddItem;
     @FXML private VBox   panelUpdatePrice;
+    @FXML private VBox   panelUpdateItemVendor;
     @FXML private VBox   panelInventoryStatus;
     @FXML private VBox   panelLowStock;
     @FXML private VBox   panelTransactions;
@@ -43,23 +46,32 @@ public class ManagerDashboardController {
     @FXML private TextField aiCategory;
     @FXML private TextField aiInitialStock;
 
+    @FXML private ComboBox<Vendor> aiVendorCombo;
+
     // ── Update Price Form ─────────────────────────────────────────────────────
     @FXML private TextField upItemCode;
     @FXML private TextField upNewPrice;
 
+    // ── Update Item Vendor Form ───────────────────────────────────────────────
+    @FXML private TextField uivItemCode;
+    @FXML private ComboBox<Vendor> uivVendorCombo;
+
     // ── Inventory Status Table ────────────────────────────────────────────────
-    @FXML private TableView<InventoryRecord>            inventoryTable;
-    @FXML private TableColumn<InventoryRecord, String>  invItemCodeCol;
-    @FXML private TableColumn<InventoryRecord, Integer> invStockCol;
-    @FXML private TableColumn<InventoryRecord, String>  invUpdatedByCol;
-    @FXML private TableColumn<InventoryRecord, Object>  invLastUpdatedCol;
+    @FXML private TableView<model.InventoryVendorStatus>            inventoryTable;
+    @FXML private TableColumn<model.InventoryVendorStatus, String>  invItemCodeCol;
+    @FXML private TableColumn<model.InventoryVendorStatus, String>  invItemNameCol;
+    @FXML private TableColumn<model.InventoryVendorStatus, Integer> invStockCol;
+    @FXML private TableColumn<model.InventoryVendorStatus, String>  invVendorCol;
+    @FXML private TableColumn<model.InventoryVendorStatus, String>  invUpdatedByCol;
+    @FXML private TableColumn<model.InventoryVendorStatus, Object>  invLastUpdatedCol;
 
     // ── Low Stock Table ───────────────────────────────────────────────────────
-    @FXML private TableView<Item>             lowStockTable;
-    @FXML private TableColumn<Item, String>   lsItemCodeCol;
-    @FXML private TableColumn<Item, String>   lsItemNameCol;
-    @FXML private TableColumn<Item, Integer>  lsReorderCol;
-    @FXML private TableColumn<Item, String>   lsCategoryCol;
+    @FXML private TableView<LowStockVendorAlert>             lowStockTable;
+    @FXML private TableColumn<LowStockVendorAlert, String>   lsItemNameCol;
+    @FXML private TableColumn<LowStockVendorAlert, Integer>  lsStockCol;
+    @FXML private TableColumn<LowStockVendorAlert, Integer>  lsReorderCol;
+    @FXML private TableColumn<LowStockVendorAlert, String>   lsVendorNameCol;
+    @FXML private TableColumn<LowStockVendorAlert, String>   lsVendorPhoneCol;
 
     // ── Transactions Table ────────────────────────────────────────────────────
     @FXML private TableView<SalesTransaction>            txnTable;
@@ -94,9 +106,35 @@ public class ManagerDashboardController {
     @FXML private TextField deactivateUserId;
     @FXML private TextField reactivateUserId;
 
+    // ── Vendor Management ─────────────────────────────────────────────────────
+    @FXML private VBox panelVendorManagement;
+    @FXML private TableView<Vendor>              vendorTable;
+    @FXML private TableColumn<Vendor, Integer>   vIdCol;
+    @FXML private TableColumn<Vendor, String>    vNameCol;
+    @FXML private TableColumn<Vendor, String>    vPhoneCol;
+    @FXML private TableColumn<Vendor, String>    vEmailCol;
+    @FXML private TableColumn<Vendor, String>    vAddressCol;
+
+    @FXML private VBox      addVendorForm;
+    @FXML private TextField newVendorName;
+    @FXML private TextField newVendorPhone;
+    @FXML private TextField newVendorEmail;
+    @FXML private TextField newVendorAddress;
+
+    @FXML private VBox      updateVendorForm;
+    @FXML private TextField updVendorId;
+    @FXML private TextField updVendorPhone;
+    @FXML private TextField updVendorEmail;
+    @FXML private TextField updVendorAddress;
+
+    @FXML private VBox      deleteVendorForm;
+    @FXML private TextField deleteVendorId;
+
     // ── Services ──────────────────────────────────────────────────────────────
     private final InventoryService inventoryService = new InventoryService();
     private final ReportService    reportService    = new ReportService();
+    private final VendorService    vendorService    = new VendorService();
+    private final ItemService      itemService      = new ItemService();
     private final AuthService      authService      = new AuthService();
     private final SessionManager   session          = SessionManager.getInstance();
 
@@ -116,13 +154,29 @@ public class ManagerDashboardController {
     }
 
     // ── Sidebar Navigation ────────────────────────────────────────────────────
-    @FXML private void showAddItem()         { showPanel(panelAddItem); }
+    @FXML private void showAddItem() {
+        showPanel(panelAddItem);
+        List<Vendor> vendors = vendorService.getAllVendors();
+        aiVendorCombo.setItems(FXCollections.observableArrayList(vendors));
+        if (vendors.isEmpty()) {
+            AlertHelper.showInfo("No Vendors", "No vendors available. Item will be created without vendor assignment.");
+        }
+    }
     @FXML private void showUpdatePrice()     { showPanel(panelUpdatePrice); }
+    @FXML private void showUpdateItemVendor(){
+        showPanel(panelUpdateItemVendor);
+        List<Vendor> vendors = vendorService.getAllVendors();
+        uivVendorCombo.setItems(FXCollections.observableArrayList(vendors));
+        if (vendors.isEmpty()) {
+            AlertHelper.showInfo("No Vendors", "No vendors available to assign.");
+        }
+    }
     @FXML private void showInventoryStatus() { showPanel(panelInventoryStatus); handleViewInventoryStatus(); }
     @FXML private void showLowStock()        { showPanel(panelLowStock); handleViewLowStockItems(); }
     @FXML private void showTransactions()    { showPanel(panelTransactions); }
     @FXML private void showPriceHistory()    { showPanel(panelPriceHistory); }
     @FXML private void showStaffManagement() { showPanel(panelStaffManagement); }
+    @FXML private void showVendorManagement(){ showPanel(panelVendorManagement); handleViewAllVendors(); }
 
     // ── Add New Item ──────────────────────────────────────────────────────────
     @FXML
@@ -158,6 +212,11 @@ public class ManagerDashboardController {
         Item item = new Item(itemCode, itemName, price, costPrice,
                 reorderLevel, category, LocalDateTime.now());
 
+        Vendor selectedVendor = aiVendorCombo.getSelectionModel().getSelectedItem();
+        if (selectedVendor != null) {
+            item.setVendorId(selectedVendor.getVendorId());
+        }
+
         boolean ok = inventoryService.addNewItem(item, initialStock, session.getUserId());
         if (ok) {
             AlertHelper.showInfo("Success", "Item '" + itemCode + "' added with stock " + initialStock + ".");
@@ -171,7 +230,7 @@ public class ManagerDashboardController {
     private void handleClearAddItem() {
         aiItemCode.clear(); aiItemName.clear(); aiPrice.clear();
         aiCostPrice.clear(); aiReorderLevel.clear(); aiCategory.clear();
-        aiInitialStock.clear();
+        aiInitialStock.clear(); aiVendorCombo.getSelectionModel().clearSelection();
     }
 
     // ── Update Item Price ─────────────────────────────────────────────────────
@@ -203,10 +262,43 @@ public class ManagerDashboardController {
     @FXML
     private void handleClearUpdatePrice() { upItemCode.clear(); upNewPrice.clear(); }
 
+    // ── Update Item Vendor ────────────────────────────────────────────────────
+    @FXML
+    private void handleUpdateItemVendor() {
+        String itemCode = uivItemCode.getText().trim();
+        Vendor selectedVendor = uivVendorCombo.getSelectionModel().getSelectedItem();
+
+        if (itemCode.isEmpty() || selectedVendor == null) {
+            AlertHelper.showError("Validation Error", "Item code and Vendor selection are required.");
+            return;
+        }
+
+        Item item = inventoryService.getItemByCode(itemCode);
+        if (item == null) {
+            AlertHelper.showError("Error", "Item not found: " + itemCode);
+            return;
+        }
+
+        item.setVendorId(selectedVendor.getVendorId());
+        boolean ok = itemService.updateItemVendor(item);
+        if (ok) {
+            AlertHelper.showInfo("Success", "Vendor updated for item '" + itemCode + "'.");
+            handleClearUpdateItemVendor();
+        } else {
+            AlertHelper.showError("Error", "Failed to update item vendor.");
+        }
+    }
+
+    @FXML
+    private void handleClearUpdateItemVendor() { 
+        uivItemCode.clear(); 
+        uivVendorCombo.getSelectionModel().clearSelection(); 
+    }
+
     // ── Inventory Status ──────────────────────────────────────────────────────
     @FXML
     private void handleViewInventoryStatus() {
-        List<InventoryRecord> records = reportService.getInventoryStatus();
+        List<model.InventoryVendorStatus> records = reportService.getInventoryStatusWithVendor();
         inventoryTable.setItems(FXCollections.observableArrayList(records));
         if (records.isEmpty())
             AlertHelper.showInfo("Inventory Status", "No inventory records found.");
@@ -215,9 +307,9 @@ public class ManagerDashboardController {
     // ── Low Stock ─────────────────────────────────────────────────────────────
     @FXML
     private void handleViewLowStockItems() {
-        List<Item> items = reportService.getItemsBelowReorderLevel();
-        lowStockTable.setItems(FXCollections.observableArrayList(items));
-        if (items.isEmpty())
+        List<LowStockVendorAlert> alerts = reportService.getLowStockItemsWithVendor();
+        lowStockTable.setItems(FXCollections.observableArrayList(alerts));
+        if (alerts.isEmpty())
             AlertHelper.showInfo("Low Stock", "No items are below their reorder level.");
     }
 
@@ -356,6 +448,102 @@ public class ManagerDashboardController {
         setVisible(reactivateForm,  false);
     }
 
+    // ── Vendor Management CRUD ────────────────────────────────────────────────
+    @FXML
+    private void handleViewAllVendors() {
+        List<Vendor> vendors = vendorService.getAllVendors();
+        vendorTable.setItems(FXCollections.observableArrayList(vendors));
+        hideVendorForms();
+    }
+
+    @FXML private void showAddVendor()    { hideVendorForms(); setVisible(addVendorForm, true); }
+    @FXML private void showUpdateVendor() { hideVendorForms(); setVisible(updateVendorForm, true); }
+    @FXML private void showDeleteVendor() { hideVendorForms(); setVisible(deleteVendorForm, true); }
+
+    @FXML
+    private void handleAddVendor() {
+        String name    = newVendorName.getText().trim();
+        String phone   = newVendorPhone.getText().trim();
+        String email   = newVendorEmail.getText().trim();
+        String address = newVendorAddress.getText().trim();
+
+        if (name.isEmpty() || phone.isEmpty()) {
+            AlertHelper.showError("Validation Error", "Vendor Name and Phone are required.");
+            return;
+        }
+
+        boolean ok = vendorService.addVendor(name, phone, email, address);
+        if (ok) {
+            AlertHelper.showInfo("Success", "Vendor '" + name + "' added successfully.");
+            newVendorName.clear(); newVendorPhone.clear();
+            newVendorEmail.clear(); newVendorAddress.clear();
+            handleViewAllVendors();
+        } else {
+            AlertHelper.showError("Error", "Failed to add vendor. Ensure phone is exactly 10 digits and unique.");
+        }
+    }
+
+    @FXML
+    private void handleUpdateVendor() {
+        String idStr   = updVendorId.getText().trim();
+        String phone   = updVendorPhone.getText().trim();
+        String email   = updVendorEmail.getText().trim();
+        String address = updVendorAddress.getText().trim();
+
+        if (idStr.isEmpty() || phone.isEmpty()) {
+            AlertHelper.showError("Validation Error", "Vendor ID and Phone are required.");
+            return;
+        }
+
+        int vid;
+        try { vid = Integer.parseInt(idStr); }
+        catch (NumberFormatException e) {
+            AlertHelper.showError("Validation Error", "Vendor ID must be a valid integer.");
+            return;
+        }
+
+        boolean ok = vendorService.updateVendor(vid, phone, email, address);
+        if (ok) {
+            AlertHelper.showInfo("Success", "Vendor ID " + vid + " updated successfully.");
+            updVendorId.clear(); updVendorPhone.clear();
+            updVendorEmail.clear(); updVendorAddress.clear();
+            handleViewAllVendors();
+        } else {
+            AlertHelper.showError("Error", "Failed to update vendor. Ensure ID exists and phone is valid.");
+        }
+    }
+
+    @FXML
+    private void handleDeleteVendor() {
+        String idStr = deleteVendorId.getText().trim();
+        if (idStr.isEmpty()) {
+            AlertHelper.showError("Validation Error", "Vendor ID is required.");
+            return;
+        }
+        int vid;
+        try { vid = Integer.parseInt(idStr); }
+        catch (NumberFormatException e) {
+            AlertHelper.showError("Validation Error", "Vendor ID must be a valid integer.");
+            return;
+        }
+
+        boolean ok = vendorService.deleteVendor(vid);
+        if (ok) {
+            AlertHelper.showInfo("Success", "Vendor ID " + vid + " deleted.");
+            deleteVendorId.clear();
+            handleViewAllVendors();
+        } else {
+            AlertHelper.showError("Error", "Failed to delete. Vendor may be linked to active items.");
+        }
+    }
+
+    @FXML
+    private void hideVendorForms() {
+        setVisible(addVendorForm, false);
+        setVisible(updateVendorForm, false);
+        setVisible(deleteVendorForm, false);
+    }
+
     // ── Logout ────────────────────────────────────────────────────────────────
     @FXML
     private void handleLogout() {
@@ -367,15 +555,21 @@ public class ManagerDashboardController {
     private void setupTables() {
         // Inventory Status
         safe(invItemCodeCol)   .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemCode()));
+        safe(invItemNameCol)   .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemName()));
         safe(invStockCol)      .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getStockLevel()).asObject());
+        safe(invVendorCol)     .setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getVendorName() != null ? d.getValue().getVendorName() : "N/A"));
         safe(invUpdatedByCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getUpdatedBy()));
         safe(invLastUpdatedCol).setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getLastUpdated()));
 
-        // Low Stock
-        safe(lsItemCodeCol).setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemCode()));
-        safe(lsItemNameCol).setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemName()));
-        safe(lsReorderCol) .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getReorderLevel()).asObject());
-        safe(lsCategoryCol).setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getCategory()));
+        // Low Stock Vendor Alert
+        safe(lsItemNameCol)   .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemName()));
+        safe(lsStockCol)      .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getStockLevel()).asObject());
+        safe(lsReorderCol)    .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getReorderLevel()).asObject());
+        safe(lsVendorNameCol) .setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getVendorName() != null ? d.getValue().getVendorName() : "N/A"));
+        safe(lsVendorPhoneCol).setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getPhone() != null ? d.getValue().getPhone() : "N/A"));
 
         // Transactions
         safe(txnIdCol)    .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionId()));
@@ -395,13 +589,21 @@ public class ManagerDashboardController {
         safe(stRoleCol)     .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getRole()));
         safe(stStatusCol)   .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getStatus()));
         safe(stCreatedAtCol).setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getCreatedAt()));
+
+        // Vendor
+        safe(vIdCol)     .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getVendorId()).asObject());
+        safe(vNameCol)   .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getVendorName()));
+        safe(vPhoneCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getPhone()));
+        safe(vEmailCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getEmail()));
+        safe(vAddressCol).setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getAddress()));
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────────
     private void showPanel(VBox target) {
-        VBox[] panels = {panelWelcome, panelAddItem, panelUpdatePrice,
+        VBox[] panels = {panelWelcome, panelAddItem, panelUpdatePrice, panelUpdateItemVendor,
                          panelInventoryStatus, panelLowStock,
-                         panelTransactions, panelPriceHistory, panelStaffManagement};
+                         panelTransactions, panelPriceHistory, 
+                         panelStaffManagement, panelVendorManagement};
         for (VBox p : panels) setVisible(p, false);
         setVisible(target, true);
     }

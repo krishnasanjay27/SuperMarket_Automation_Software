@@ -165,4 +165,17 @@ public class InventoryService {
     public List<Item> getAllItems() {
         return itemDAO.getAllItems();
     }
+
+    public boolean removeItem(String itemCode) {
+        if (itemCode == null || itemCode.isBlank()) {
+            System.err.println("removeItem() failed – itemCode must not be empty.");
+            return false;
+        }
+        Item item = itemDAO.getItemByCode(itemCode);
+        if (item == null) {
+            System.err.println("removeItem() failed – item not found: " + itemCode);
+            return false;
+        }
+        return itemDAO.deleteItemCompletely(itemCode);
+    }
 }

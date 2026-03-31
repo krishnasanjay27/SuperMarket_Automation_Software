@@ -140,31 +140,62 @@ public class ItemDAO {
         return success;
     }
 
-    public boolean deleteItem(String itemCode) {
-        boolean success = false;
+    public boolean deleteItemCompletely(String itemCode) {
+        String countTxnSql = "SELECT COUNT(*) FROM TransactionItem WHERE itemCode = ?";
+        String delPriceSql = "DELETE FROM PriceHistory WHERE itemCode = ?";
+        String delInvSql   = "DELETE FROM InventoryRecord WHERE itemCode = ?";
+        String delItemSql  = "DELETE FROM Item WHERE itemCode = ?";
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_DELETE_ITEM)) {
-
-            stmt.setString(1, itemCode);
-
-            int rowsAffected = stmt.executeUpdate();
-            success = (rowsAffected > 0);
-
-            if (success) {
-                System.out.println("Item '" + itemCode + "' deleted successfully.");
-            } else {
-                System.out.println("deleteItem() – no item found with code: " + itemCode);
+        try (Connection conn = DBConnection.getConnection()) {
+            
+            // 1. Check if used in transactions
+            try (PreparedStatement checkStmt = conn.prepareStatement(countTxnSql)) {
+                checkStmt.setString(1, itemCode);
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        System.err.println("deleteItemCompletely() blocked – item '" + itemCode + "' has transaction history.");
+                        return false;
+                    }
+                }
             }
 
-        } catch (SQLIntegrityConstraintViolationException e) {
-            System.err.println("deleteItem() blocked – item '" + itemCode +
-                               "' is referenced by existing records. Remove dependencies first.");
-        } catch (SQLException e) {
-            System.err.println("deleteItem() failed – " + e.getMessage());
-        }
+            // 2. Perform Atomic Deletion
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement stmtHist = conn.prepareStatement(delPriceSql)) {
+                    stmtHist.setString(1, itemCode);
+                    stmtHist.executeUpdate();
+                }
+                try (PreparedStatement stmtInv = conn.prepareStatement(delInvSql)) {
+                    stmtInv.setString(1, itemCode);
+                    stmtInv.executeUpdate();
+                }
+                int itemsDeleted;
+                try (PreparedStatement stmtItem = conn.prepareStatement(delItemSql)) {
+                    stmtItem.setString(1, itemCode);
+                    itemsDeleted = stmtItem.executeUpdate();
+                }
+                
+                if (itemsDeleted > 0) {
+                    conn.commit();
+                    System.out.println("Item '" + itemCode + "' completely removed.");
+                    return true;
+                } else {
+                    conn.rollback();
+                    System.out.println("deleteItemCompletely() – no item found with code: " + itemCode);
+                    return false;
+                }
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e; // rethrow to be caught by outer block
+            } finally {
+                conn.setAutoCommit(true);
+            }
 
-        return success;
+        } catch (SQLException e) {
+            System.err.println("deleteItemCompletely() failed – " + e.getMessage());
+            return false;
+        }
     }
 
     public boolean updateItem(Item item) {

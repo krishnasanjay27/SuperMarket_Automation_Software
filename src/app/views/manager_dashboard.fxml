@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -25,13 +26,15 @@
 
     <!-- Sidebar -->
     <left>
-        <VBox styleClass="sidebar" spacing="6" prefWidth="220">
-            <padding><Insets top="20" right="14" bottom="20" left="14"/></padding>
+        <ScrollPane fitToWidth="true" fitToHeight="true" styleClass="sidebar-scroll" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" style="-fx-background-color:transparent;-fx-padding:0;">
+            <VBox styleClass="sidebar" spacing="6" prefWidth="220">
+                <padding><Insets top="20" right="14" bottom="20" left="14"/></padding>
 
             <Label text="CATALOGUE" styleClass="sidebar-section"/>
             <Button id="addItemNavBtn"         text="+ Add New Item"          onAction="#showAddItem"          styleClass="sidebar-btn" maxWidth="Infinity"/>
             <Button id="updatePriceNavBtn"     text="💲 Update Item Price"     onAction="#showUpdatePrice"      styleClass="sidebar-btn" maxWidth="Infinity"/>
             <Button id="updateItemVendorNavBtn" text="🏢 Update Item Vendor"   onAction="#showUpdateItemVendor" styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="removeItemNavBtn"      text="🗑️ Remove Item"         onAction="#showRemoveItem"       styleClass="sidebar-btn" maxWidth="Infinity"/>
 
             <Separator/>
 
@@ -54,7 +57,14 @@
 
             <Label text="VENDOR" styleClass="sidebar-section"/>
             <Button id="vendorMgmtNavBtn"    text="🏢 Vendor Management"    onAction="#showVendorManagement" styleClass="sidebar-btn" maxWidth="Infinity"/>
-        </VBox>
+
+            <Separator/>
+
+            <Label text="SALES REPORTS" styleClass="sidebar-section"/>
+            <Button id="profitBySaleNavBtn"  text="📈 Profit by Sale"       onAction="#showProfitBySale"    styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Button id="profitByItemNavBtn"  text="📦 Profit by Item"       onAction="#showProfitByItem"    styleClass="sidebar-btn" maxWidth="Infinity"/>
+            </VBox>
+        </ScrollPane>
     </left>
 
     <!-- Main Content: StackPane with overlay panels -->
@@ -125,6 +135,20 @@
                         <HBox spacing="10">
                             <Button id="upSubmitBtn" text="Update Price" onAction="#handleUpdateItemPrice" styleClass="btn-primary"/>
                             <Button text="Clear" onAction="#handleClearUpdatePrice" styleClass="btn-secondary"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ REMOVE ITEM PANEL ════ -->
+                <VBox fx:id="panelRemoveItem" spacing="14" managed="false" visible="false">
+                    <Label text="Remove Item" styleClass="welcome-label"/>
+                    <Label text="Permanently delete a product from the system. (Fails if item has transaction history)" styleClass="section-subtitle"/>
+                    <VBox styleClass="info-card" spacing="14" maxWidth="400">
+                        <Label text="Item Code to Delete" styleClass="field-label"/>
+                        <TextField fx:id="removeItemCode" promptText="Enter Code (e.g., FBN-001)" prefWidth="240" styleClass="input-field"/>
+                        
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button text="Remove Item" onAction="#handleRemoveItem" styleClass="btn-danger"/>
                         </HBox>
                     </VBox>
                 </VBox>
@@ -459,6 +483,92 @@
                             <Button text="Delete" onAction="#handleDeleteVendor" styleClass="btn-danger"/>
                             <Button text="Cancel" onAction="#hideVendorForms" styleClass="btn-secondary"/>
                         </HBox>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ PROFIT BY SALE PANEL ════ -->
+                <VBox fx:id="panelProfitBySale" spacing="14" managed="false" visible="false">
+                    <Label text="Profit by Sale" styleClass="welcome-label"/>
+                    <Label text="Revenue, cost and profit breakdown per finalized transaction." styleClass="section-subtitle"/>
+
+                    <!-- Time Filter -->
+                    <VBox styleClass="info-card" spacing="10" maxWidth="Infinity">
+                        <HBox spacing="20" alignment="CENTER_LEFT">
+                            <RadioButton fx:id="saleRbToday"       text="Today"        selected="true"/>
+                            <RadioButton fx:id="saleRbThisMonth"   text="This Month"/>
+                            <RadioButton fx:id="saleRbCustomRange" text="Custom Range"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="From:" styleClass="field-label"/>
+                            <DatePicker fx:id="saleDpStart" promptText="Start date" prefWidth="160"/>
+                            <Label text="To:" styleClass="field-label"/>
+                            <DatePicker fx:id="saleDpEnd"   promptText="End date"   prefWidth="160"/>
+                            <Button id="saleGenerateBtn" text="Generate Report" onAction="#handleGenerateSaleReport" styleClass="btn-primary"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Table -->
+                    <VBox styleClass="table-card" spacing="8">
+                        <TableView fx:id="saleReportTable" prefHeight="220" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="saleTxnIdCol"  text="Transaction ID" prefWidth="200"/>
+                                <TableColumn fx:id="saleRevCol"    text="Revenue (₹)"    prefWidth="150"/>
+                                <TableColumn fx:id="saleCostCol"   text="Cost (₹)"       prefWidth="150"/>
+                                <TableColumn fx:id="saleProfitCol" text="Profit (₹)"     prefWidth="150"/>
+                            </columns>
+                            <placeholder><Label text="Click 'Generate Report' to load data." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Chart -->
+                    <VBox styleClass="table-card" spacing="8">
+                        <BarChart fx:id="saleBarChart" prefHeight="280" animated="false">
+                            <xAxis><CategoryAxis label="Transaction ID"/></xAxis>
+                            <yAxis><NumberAxis label="Profit (₹)"/></yAxis>
+                        </BarChart>
+                    </VBox>
+                </VBox>
+
+                <!-- ════ PROFIT BY ITEM PANEL ════ -->
+                <VBox fx:id="panelProfitByItem" spacing="14" managed="false" visible="false">
+                    <Label text="Profit by Item" styleClass="welcome-label"/>
+                    <Label text="Total units sold and profit generated per product." styleClass="section-subtitle"/>
+
+                    <!-- Time Filter -->
+                    <VBox styleClass="info-card" spacing="10" maxWidth="Infinity">
+                        <HBox spacing="20" alignment="CENTER_LEFT">
+                            <RadioButton fx:id="itemRbToday"       text="Today"        selected="true"/>
+                            <RadioButton fx:id="itemRbThisMonth"   text="This Month"/>
+                            <RadioButton fx:id="itemRbCustomRange" text="Custom Range"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="From:" styleClass="field-label"/>
+                            <DatePicker fx:id="itemDpStart" promptText="Start date" prefWidth="160"/>
+                            <Label text="To:" styleClass="field-label"/>
+                            <DatePicker fx:id="itemDpEnd"   promptText="End date"   prefWidth="160"/>
+                            <Button id="itemGenerateBtn" text="Generate Report" onAction="#handleGenerateItemReport" styleClass="btn-primary"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Table -->
+                    <VBox styleClass="table-card" spacing="8">
+                        <TableView fx:id="itemReportTable" prefHeight="220" maxWidth="Infinity">
+                            <columns>
+                                <TableColumn fx:id="itemCodeCol"        text="Item Code"   prefWidth="120"/>
+                                <TableColumn fx:id="itemNameCol"        text="Item Name"   prefWidth="220"/>
+                                <TableColumn fx:id="itemTotalSoldCol"   text="Total Sold"  prefWidth="120"/>
+                                <TableColumn fx:id="itemProfitCol"      text="Profit (₹)"  prefWidth="120"/>
+                            </columns>
+                            <placeholder><Label text="Click 'Generate Report' to load data." style="-fx-text-fill:#ADB5BD;"/></placeholder>
+                        </TableView>
+                    </VBox>
+
+                    <!-- Chart -->
+                    <VBox styleClass="table-card" spacing="8">
+                        <BarChart fx:id="itemBarChart" prefHeight="280" animated="false">
+                            <xAxis><CategoryAxis label="Item Name"/></xAxis>
+                            <yAxis><NumberAxis label="Profit (₹)"/></yAxis>
+                        </BarChart>
                     </VBox>
                 </VBox>
 

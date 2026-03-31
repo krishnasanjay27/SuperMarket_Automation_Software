@@ -9,6 +9,8 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import model.*;
@@ -16,11 +18,13 @@ import service.AuthService;
 import service.InventoryService;
 import service.ItemService;
 import service.ReportService;
+import service.SalesReportService;
 import service.VendorService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class ManagerDashboardController {
@@ -36,6 +40,7 @@ public class ManagerDashboardController {
     @FXML private VBox   panelTransactions;
     @FXML private VBox   panelPriceHistory;
     @FXML private VBox   panelStaffManagement;
+    @FXML private VBox   panelRemoveItem;
 
     // ── Add Item Form ─────────────────────────────────────────────────────────
     @FXML private TextField aiItemCode;
@@ -51,6 +56,9 @@ public class ManagerDashboardController {
     // ── Update Price Form ─────────────────────────────────────────────────────
     @FXML private TextField upItemCode;
     @FXML private TextField upNewPrice;
+
+    // ── Remove Item Form ──────────────────────────────────────────────────────
+    @FXML private TextField removeItemCode;
 
     // ── Update Item Vendor Form ───────────────────────────────────────────────
     @FXML private TextField uivItemCode;
@@ -130,13 +138,49 @@ public class ManagerDashboardController {
     @FXML private VBox      deleteVendorForm;
     @FXML private TextField deleteVendorId;
 
+    // ── Sales Reports ─────────────────────────────────────────────────────────────
+    @FXML private VBox panelProfitBySale;
+    @FXML private VBox panelProfitByItem;
+
+    @FXML private RadioButton saleRbToday;
+    @FXML private RadioButton saleRbThisMonth;
+    @FXML private RadioButton saleRbCustomRange;
+    @FXML private DatePicker  saleDpStart;
+    @FXML private DatePicker  saleDpEnd;
+
+    @FXML private TableView<ProfitBySaleDTO>            saleReportTable;
+    @FXML private TableColumn<ProfitBySaleDTO, String>  saleTxnIdCol;
+    @FXML private TableColumn<ProfitBySaleDTO, Double>  saleRevCol;
+    @FXML private TableColumn<ProfitBySaleDTO, Double>  saleCostCol;
+    @FXML private TableColumn<ProfitBySaleDTO, Double>  saleProfitCol;
+    @FXML private BarChart<String, Number>              saleBarChart;
+
+    @FXML private RadioButton itemRbToday;
+    @FXML private RadioButton itemRbThisMonth;
+    @FXML private RadioButton itemRbCustomRange;
+    @FXML private DatePicker  itemDpStart;
+    @FXML private DatePicker  itemDpEnd;
+
+    @FXML private TableView<ProfitByItemDTO>            itemReportTable;
+    @FXML private TableColumn<ProfitByItemDTO, String>  itemCodeCol;
+    @FXML private TableColumn<ProfitByItemDTO, String>  itemNameCol;
+    @FXML private TableColumn<ProfitByItemDTO, Integer> itemTotalSoldCol;
+    @FXML private TableColumn<ProfitByItemDTO, Double>  itemProfitCol;
+    @FXML private BarChart<String, Number>              itemBarChart;
+
+    private ToggleGroup saleToggleGroup;
+    private ToggleGroup itemToggleGroup;
+
+    private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
+
     // ── Services ──────────────────────────────────────────────────────────────
-    private final InventoryService inventoryService = new InventoryService();
-    private final ReportService    reportService    = new ReportService();
-    private final VendorService    vendorService    = new VendorService();
-    private final ItemService      itemService      = new ItemService();
-    private final AuthService      authService      = new AuthService();
-    private final SessionManager   session          = SessionManager.getInstance();
+    private final InventoryService   inventoryService   = new InventoryService();
+    private final ReportService      reportService      = new ReportService();
+    private final VendorService      vendorService      = new VendorService();
+    private final ItemService        itemService        = new ItemService();
+    private final AuthService        authService        = new AuthService();
+    private final SalesReportService salesReportService = new SalesReportService();
+    private final SessionManager     session            = SessionManager.getInstance();
 
 
 
@@ -150,6 +194,17 @@ public class ManagerDashboardController {
             newRole.setItems(FXCollections.observableArrayList(
                     "SalesStaff", "InventoryStaff", "Manager"));
         }
+        // Wire ToggleGroups for report panels
+        saleToggleGroup = new ToggleGroup();
+        if (saleRbToday != null) saleRbToday.setToggleGroup(saleToggleGroup);
+        if (saleRbThisMonth != null) saleRbThisMonth.setToggleGroup(saleToggleGroup);
+        if (saleRbCustomRange != null) saleRbCustomRange.setToggleGroup(saleToggleGroup);
+
+        itemToggleGroup = new ToggleGroup();
+        if (itemRbToday != null) itemRbToday.setToggleGroup(itemToggleGroup);
+        if (itemRbThisMonth != null) itemRbThisMonth.setToggleGroup(itemToggleGroup);
+        if (itemRbCustomRange != null) itemRbCustomRange.setToggleGroup(itemToggleGroup);
+
         showPanel(panelWelcome);
     }
 
@@ -162,6 +217,7 @@ public class ManagerDashboardController {
             AlertHelper.showInfo("No Vendors", "No vendors available. Item will be created without vendor assignment.");
         }
     }
+    @FXML private void showRemoveItem()      { showPanel(panelRemoveItem); removeItemCode.clear(); }
     @FXML private void showUpdatePrice()     { showPanel(panelUpdatePrice); }
     @FXML private void showUpdateItemVendor(){
         showPanel(panelUpdateItemVendor);
@@ -177,6 +233,8 @@ public class ManagerDashboardController {
     @FXML private void showPriceHistory()    { showPanel(panelPriceHistory); }
     @FXML private void showStaffManagement() { showPanel(panelStaffManagement); }
     @FXML private void showVendorManagement(){ showPanel(panelVendorManagement); handleViewAllVendors(); }
+    @FXML private void showProfitBySale()    { showPanel(panelProfitBySale); }
+    @FXML private void showProfitByItem()    { showPanel(panelProfitByItem); }
 
     // ── Add New Item ──────────────────────────────────────────────────────────
     @FXML
@@ -266,7 +324,7 @@ public class ManagerDashboardController {
     @FXML
     private void handleUpdateItemVendor() {
         String itemCode = uivItemCode.getText().trim();
-        Vendor selectedVendor = uivVendorCombo.getSelectionModel().getSelectedItem();
+        Vendor selectedVendor = uivVendorCombo.getValue();
 
         if (itemCode.isEmpty() || selectedVendor == null) {
             AlertHelper.showError("Validation Error", "Item code and Vendor selection are required.");
@@ -293,6 +351,27 @@ public class ManagerDashboardController {
     private void handleClearUpdateItemVendor() { 
         uivItemCode.clear(); 
         uivVendorCombo.getSelectionModel().clearSelection(); 
+    }
+
+    // ── Remove Item ───────────────────────────────────────────────────────────
+    @FXML
+    private void handleRemoveItem() {
+        String itemCode = removeItemCode.getText().trim();
+        if (itemCode.isEmpty()) {
+            AlertHelper.showError("Validation Error", "Please provide an Item Code.");
+            return;
+        }
+        
+        boolean confirm = AlertHelper.showConfirm("Confirm Deletion", "Are you sure you want to permanently remove item " + itemCode + "?");
+        if (!confirm) return;
+
+        boolean success = inventoryService.removeItem(itemCode);
+        if (success) {
+            AlertHelper.showInfo("Success", "Item successfully removed from the catalogue.");
+            removeItemCode.clear();
+        } else {
+            AlertHelper.showError("Remove Failed", "Could not remove item. It may have existing transaction records, or the code is wrong.");
+        }
     }
 
     // ── Inventory Status ──────────────────────────────────────────────────────
@@ -596,14 +675,112 @@ public class ManagerDashboardController {
         safe(vPhoneCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getPhone()));
         safe(vEmailCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getEmail()));
         safe(vAddressCol).setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getAddress()));
+
+        // Sales Report Tables
+        safe(saleTxnIdCol) .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionId()));
+        safe(saleRevCol)   .setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getRevenue()).asObject());
+        safe(saleCostCol)  .setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getCost()).asObject());
+        safe(saleProfitCol).setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getProfit()).asObject());
+
+        safe(itemCodeCol)     .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemCode()));
+        safe(itemNameCol)     .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemName()));
+        safe(itemTotalSoldCol).setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getTotalSold()).asObject());
+        safe(itemProfitCol)   .setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getProfit()).asObject());
+    }
+
+    // ── Sales Reports ─────────────────────────────────────────────────────────────
+    @FXML
+    private void handleGenerateSaleReport() {
+        LocalDate[] range = resolveDateRange(saleRbToday, saleRbThisMonth, saleRbCustomRange,
+                                             saleDpStart, saleDpEnd, "sale");
+        if (range == null) return;
+
+        LocalDate start = range[0];
+        LocalDate end   = range[1];
+        String title    = buildChartTitle("Profit by Sale", saleRbToday, saleRbThisMonth, start, end);
+
+        List<ProfitBySaleDTO> data = salesReportService.loadProfitBySaleReport(start, end, 20);
+        saleReportTable.setItems(FXCollections.observableArrayList(data));
+        saleBarChart.getData().clear();
+        saleBarChart.setTitle(title);
+
+        if (data.isEmpty()) {
+            AlertHelper.showInfo("No Data", "No sales data found for selected period.");
+            return;
+        }
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Profit");
+        for (ProfitBySaleDTO row : data) {
+            series.getData().add(new XYChart.Data<>(row.getTransactionId(), row.getProfit()));
+        }
+        saleBarChart.getData().add(series);
+    }
+
+    @FXML
+    private void handleGenerateItemReport() {
+        LocalDate[] range = resolveDateRange(itemRbToday, itemRbThisMonth, itemRbCustomRange,
+                                             itemDpStart, itemDpEnd, "item");
+        if (range == null) return;
+
+        LocalDate start = range[0];
+        LocalDate end   = range[1];
+        String title    = buildChartTitle("Profit by Item", itemRbToday, itemRbThisMonth, start, end);
+
+        List<ProfitByItemDTO> data = salesReportService.loadProfitByItemReport(start, end, 20);
+        itemReportTable.setItems(FXCollections.observableArrayList(data));
+        itemBarChart.getData().clear();
+        itemBarChart.setTitle(title);
+
+        if (data.isEmpty()) {
+            AlertHelper.showInfo("No Data", "No sales data found for selected period.");
+            return;
+        }
+
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Profit");
+        for (ProfitByItemDTO row : data) {
+            series.getData().add(new XYChart.Data<>(row.getItemName(), row.getProfit()));
+        }
+        itemBarChart.getData().add(series);
+    }
+
+    private LocalDate[] resolveDateRange(RadioButton rbToday, RadioButton rbThisMonth,
+                                         RadioButton rbCustom, DatePicker dpStart,
+                                         DatePicker dpEnd, String context) {
+        if (rbToday != null && rbToday.isSelected()) {
+            LocalDate today = LocalDate.now();
+            return new LocalDate[]{today, today};
+        }
+        if (rbThisMonth != null && rbThisMonth.isSelected()) {
+            LocalDate start = LocalDate.now().withDayOfMonth(1);
+            return new LocalDate[]{start, LocalDate.now()};
+        }
+        // Custom Range
+        LocalDate start = dpStart != null ? dpStart.getValue() : null;
+        LocalDate end   = dpEnd   != null ? dpEnd.getValue()   : null;
+        if (start == null || end == null || start.isAfter(end)) {
+            AlertHelper.showError("Invalid Date Range",
+                "Invalid date range selected. Ensure both dates are set and start ≤ end.");
+            return null;
+        }
+        return new LocalDate[]{start, end};
+    }
+
+    private String buildChartTitle(String base, RadioButton rbToday, RadioButton rbThisMonth,
+                                   LocalDate start, LocalDate end) {
+        if (rbToday != null && rbToday.isSelected())     return base + " (Today)";
+        if (rbThisMonth != null && rbThisMonth.isSelected()) return base + " (This Month)";
+        return base + " (" + start.format(DMY) + " to " + end.format(DMY) + ")";
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────────
     private void showPanel(VBox target) {
-        VBox[] panels = {panelWelcome, panelAddItem, panelUpdatePrice, panelUpdateItemVendor,
+        VBox[] panels = {panelWelcome, panelAddItem, panelUpdatePrice, panelUpdateItemVendor, panelRemoveItem,
                          panelInventoryStatus, panelLowStock,
-                         panelTransactions, panelPriceHistory, 
-                         panelStaffManagement, panelVendorManagement};
+                         panelTransactions, panelPriceHistory,
+                         panelStaffManagement, panelVendorManagement,
+                         panelProfitBySale, panelProfitByItem};
         for (VBox p : panels) setVisible(p, false);
         setVisible(target, true);
     }

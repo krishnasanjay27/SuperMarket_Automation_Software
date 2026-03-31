@@ -6,47 +6,41 @@ import model.ProfitBySaleDTO;
 
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SalesReportDAO {
 
-    private static final String SQL_PROFIT_BY_SALE =
-        "SELECT st.transactionId, " +
-        "       SUM(ti.lineTotal) AS revenue, " +
-        "       SUM(ti.quantity * i.costPrice) AS cost, " +
-        "       SUM(ti.lineTotal - (ti.quantity * i.costPrice)) AS profit " +
-        "FROM SalesTransaction st " +
-        "JOIN TransactionItem ti ON st.transactionId = ti.transactionId " +
-        "JOIN Item i              ON ti.itemCode = i.itemCode " +
-        "WHERE st.status = 'FINALIZED' " +
-        "  AND st.transactionDate BETWEEN ? AND ? " +
-        "GROUP BY st.transactionId " +
-        "ORDER BY st.transactionId";
-
-    private static final String SQL_PROFIT_BY_ITEM =
-        "SELECT i.itemName, " +
-        "       SUM(ti.quantity) AS totalSold, " +
-        "       SUM(ti.quantity * (ti.unitPrice - i.costPrice)) AS profit " +
-        "FROM TransactionItem ti " +
-        "JOIN Item i              ON ti.itemCode = i.itemCode " +
-        "JOIN SalesTransaction st ON st.transactionId = ti.transactionId " +
-        "WHERE st.status = 'FINALIZED' " +
-        "  AND st.transactionDate BETWEEN ? AND ? " +
-        "GROUP BY i.itemName " +
-        "ORDER BY profit DESC";
-
-    public List<ProfitBySaleDTO> getProfitBySaleReport(LocalDate startDate, LocalDate endDate) {
+    public List<ProfitBySaleDTO> getProfitBySaleReport(LocalDate start, LocalDate end, int limit) {
         List<ProfitBySaleDTO> results = new ArrayList<>();
-        Timestamp start = Timestamp.valueOf(startDate.atStartOfDay());
-        Timestamp end   = Timestamp.valueOf(endDate.atTime(23, 59, 59));
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT " +
+            "    st.transactionId, " +
+            "    COALESCE(SUM(ti.lineTotal), 0) AS revenue, " +
+            "    COALESCE(SUM(ti.quantity * i.costPrice), 0) AS cost, " +
+            "    COALESCE(SUM(ti.lineTotal - (ti.quantity * i.costPrice)), 0) AS profit " +
+            "FROM SalesTransaction st " +
+            "JOIN TransactionItem ti ON st.transactionId = ti.transactionId " +
+            "JOIN Item i ON ti.itemCode = i.itemCode " +
+            "WHERE st.status = 'FINALIZED' " +
+            "AND st.transactionDate BETWEEN ? AND ? " +
+            "GROUP BY st.transactionId " +
+            "ORDER BY profit DESC"
+        );
+
+        if (limit > 0) {
+            sql.append(" LIMIT ?");
+        }
 
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_PROFIT_BY_SALE)) {
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
 
-            stmt.setTimestamp(1, start);
-            stmt.setTimestamp(2, end);
+            stmt.setTimestamp(1, Timestamp.valueOf(start.atStartOfDay()));
+            stmt.setTimestamp(2, Timestamp.valueOf(end.atTime(23, 59, 59)));
+            if (limit > 0) {
+                stmt.setInt(3, limit);
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -58,35 +52,60 @@ public class SalesReportDAO {
                     ));
                 }
             }
+
         } catch (SQLException e) {
-            System.err.println("getProfitBySaleReport() failed – " + e.getMessage());
+            System.err.println("getProfitBySaleReport() failed - " + e.getMessage());
         }
+
         return results;
     }
 
-    public List<ProfitByItemDTO> getProfitByItemReport(LocalDate startDate, LocalDate endDate) {
+    public List<ProfitByItemDTO> getProfitByItemReport(LocalDate start, LocalDate end, int limit) {
         List<ProfitByItemDTO> results = new ArrayList<>();
-        Timestamp start = Timestamp.valueOf(startDate.atStartOfDay());
-        Timestamp end   = Timestamp.valueOf(endDate.atTime(23, 59, 59));
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT " +
+            "    i.itemCode, " +
+            "    i.itemName, " +
+            "    COALESCE(SUM(ti.quantity), 0) AS totalSold, " +
+            "    COALESCE(SUM(ti.quantity * (ti.unitPrice - i.costPrice)), 0) AS profit " +
+            "FROM TransactionItem ti " +
+            "JOIN Item i ON ti.itemCode = i.itemCode " +
+            "JOIN SalesTransaction st ON st.transactionId = ti.transactionId " +
+            "WHERE st.status = 'FINALIZED' " +
+            "AND st.transactionDate BETWEEN ? AND ? " +
+            "GROUP BY i.itemCode, i.itemName " +
+            "ORDER BY profit DESC"
+        );
+
+        if (limit > 0) {
+            sql.append(" LIMIT ?");
+        }
 
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(SQL_PROFIT_BY_ITEM)) {
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
 
-            stmt.setTimestamp(1, start);
-            stmt.setTimestamp(2, end);
+            stmt.setTimestamp(1, Timestamp.valueOf(start.atStartOfDay()));
+            stmt.setTimestamp(2, Timestamp.valueOf(end.atTime(23, 59, 59)));
+            if (limit > 0) {
+                stmt.setInt(3, limit);
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     results.add(new ProfitByItemDTO(
+                        rs.getString("itemCode"),
                         rs.getString("itemName"),
                         rs.getInt("totalSold"),
                         rs.getDouble("profit")
                     ));
                 }
             }
+
         } catch (SQLException e) {
-            System.err.println("getProfitByItemReport() failed – " + e.getMessage());
+            System.err.println("getProfitByItemReport() failed - " + e.getMessage());
         }
+
         return results;
     }
 }

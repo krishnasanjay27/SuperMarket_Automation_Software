@@ -130,11 +130,12 @@ public class Main {
                     System.out.print("  reorderLevel : "); int reorder     = readInt();
                     System.out.print("  category     : "); String cat      = sc.nextLine().trim();
                     System.out.print("  initialStock : "); int stock       = readInt();
+                    System.out.print("  vendorId     : "); int vendorId    = readInt();
 
                     System.out.println("  → Inputs: itemCode=" + code + ", name=" + name
                         + ", price=" + price + ", cost=" + cost
                         + ", reorder=" + reorder + ", cat=" + cat
-                        + ", stock=" + stock + ", updatedBy=" + user.getUserId());
+                        + ", stock=" + stock + ", vendorId=" + vendorId + ", updatedBy=" + user.getUserId());
 
                     Item item = new Item();
                     item.setItemCode(code);
@@ -143,6 +144,7 @@ public class Main {
                     item.setCostPrice(cost);
                     item.setReorderLevel(reorder);
                     item.setCategory(cat.isBlank() ? "General" : cat);
+                    item.setVendorId(vendorId);
                     item.setCreatedAt(LocalDateTime.now());
 
                     boolean ok = invService.addNewItem(item, stock, user.getUserId());

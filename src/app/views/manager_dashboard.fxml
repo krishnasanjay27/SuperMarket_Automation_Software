@@ -109,7 +109,7 @@
                             </VBox>
                             <VBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
                                 <Label text="Select Vendor" styleClass="field-label"/>
-                                <ComboBox fx:id="aiVendorCombo" promptText="Select Vendor (Optional)" prefWidth="250"/>
+                                <ComboBox fx:id="aiVendorCombo" promptText="Select Vendor" prefWidth="250"/>
                             </VBox>
                             <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="4">
                                 <Label text="Return Duration (Days)" styleClass="field-label"/>

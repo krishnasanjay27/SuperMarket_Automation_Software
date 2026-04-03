@@ -275,9 +275,11 @@ public class ManagerDashboardController {
         item.setReturnDurationDays(returnDur);
 
         Vendor selectedVendor = aiVendorCombo.getSelectionModel().getSelectedItem();
-        if (selectedVendor != null) {
-            item.setVendorId(selectedVendor.getVendorId());
+        if (selectedVendor == null) {
+            AlertHelper.showError("Validation Error", "Selecting a Vendor is mandatory for new items.");
+            return;
         }
+        item.setVendorId(selectedVendor.getVendorId());
 
         boolean ok = inventoryService.addNewItem(item, initialStock, session.getUserId());
         if (ok) {

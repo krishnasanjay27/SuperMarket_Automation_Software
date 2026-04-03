@@ -12,6 +12,7 @@ public class Item {
     private String        category;
     private LocalDateTime createdAt;
     private Integer       vendorId;
+    private int           returnDurationDays;
 
     public Item() { }
 
@@ -50,6 +51,9 @@ public class Item {
     public Integer getVendorId()                               { return vendorId; }
     public void    setVendorId(Integer vendorId)               { this.vendorId = vendorId; }
 
+    public int  getReturnDurationDays()                              { return returnDurationDays; }
+    public void setReturnDurationDays(int returnDurationDays)        { this.returnDurationDays = returnDurationDays; }
+
     @Override
     public String toString() {
         return "Item{" +
@@ -60,6 +64,7 @@ public class Item {
                ", reorderLevel=" + reorderLevel +
                ", category='"  + category    + '\'' +
                ", createdAt="  + createdAt   +
+               ", returnDurationDays=" + returnDurationDays +
                '}';
     }
 }

@@ -111,6 +111,10 @@
                                 <Label text="Select Vendor" styleClass="field-label"/>
                                 <ComboBox fx:id="aiVendorCombo" promptText="Select Vendor (Optional)" prefWidth="250"/>
                             </VBox>
+                            <VBox spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="4">
+                                <Label text="Return Duration (Days)" styleClass="field-label"/>
+                                <TextField fx:id="aiReturnDuration" promptText="0 for no returns" styleClass="input-field" prefWidth="250"/>
+                            </VBox>
                         </GridPane>
                         <HBox spacing="10">
                             <Button id="aiSubmitBtn" text="Add Item" onAction="#handleAddNewItem" styleClass="btn-primary"/>

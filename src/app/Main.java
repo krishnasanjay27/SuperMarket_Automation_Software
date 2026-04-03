@@ -10,6 +10,7 @@ import service.AuthService;
 import service.BillService;
 import service.InventoryService;
 import service.ReportService;
+import service.ReturnService;
 import service.TransactionService;
 
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ public class Main {
     private static final InventoryService invService  = new InventoryService();
     private static final TransactionService txnService = new TransactionService();
     private static final ReportService    rptService  = new ReportService();
+    private static final ReturnService    retService  = new ReturnService();
 
     private static final DateTimeFormatter DT_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -419,8 +421,10 @@ public class Main {
             System.out.println("  4. Remove item from transaction");
             System.out.println("  5. Finalize transaction");
             System.out.println("  6. Abort transaction");
-            System.out.println("  7. Logout");
-            System.out.println("  8. Print bill / receipt");
+            System.out.println("  7. Process Return");
+            System.out.println("  8. View Return History");
+            System.out.println("  9. Print bill / receipt");
+            System.out.println("  10. Logout");
             System.out.print("Choice: ");
 
             switch (readInt()) {
@@ -535,10 +539,39 @@ public class Main {
                 }
 
                 // ----------------------------------------------------------
-                case 7 -> { printPass("Sales staff logged out."); return; }
+                case 7 -> {
+                    printOp("ReturnService.processReturn()", "");
+                    System.out.print("  transactionId : ");
+                    String txnId = sc.nextLine().trim();
+                    System.out.print("  itemCode : ");
+                    String itemCode = sc.nextLine().trim();
+                    System.out.print("  returnQty : ");
+                    int returnQty = readInt();
+                    System.out.print("  reason : ");
+                    String reason = sc.nextLine().trim();
+
+                    System.out.println("  → Inputs: transactionId=" + txnId + ", itemCode=" + itemCode + ", returnQty=" + returnQty);
+                    boolean ok = retService.processReturn(txnId, itemCode, returnQty, user.getUserId(), reason);
+                    if (ok) printPass("Return processed successfully.");
+                    else printFail("processReturn() failed. Ensure transaction is FINALIZED and item is eligible.");
+                }
+
+                case 8 -> {
+                    printOp("ReturnService.getReturnHistory()", "");
+                    System.out.print("  transactionId : ");
+                    String txnId = sc.nextLine().trim();
+                    List<model.ReturnTransaction> history = retService.getReturnHistory(txnId);
+                    if (history.isEmpty()) printPass("No returns found for transaction.");
+                    else {
+                        for (model.ReturnTransaction rt : history) {
+                            System.out.printf("  Item=%s Qty=%d Refund=%.2f Reason=%s%n",
+                                rt.getItemCode(), rt.getQuantity(), rt.getRefundAmount(), rt.getReason());
+                        }
+                    }
+                }
 
                 // ----------------------------------------------------------
-                case 8 -> {
+                case 9 -> {
                     printOp("BillService.printBillToConsole()", "");
                     System.out.print("  transactionId : ");
                     String billTxnId = sc.nextLine().trim();
@@ -551,14 +584,16 @@ public class Main {
                     if (!ok) printFail("Bill print failed – transaction must be FINALIZED first.");
                 }
 
-                default -> printFail("Invalid choice. Enter 1-8.");
+                case 10 -> { printPass("Sales staff logged out."); return; }
+
+                default -> printFail("Invalid choice. Enter 1-10.");
             }
         }
     }
 
     // ================================================================
     // Helper – prints transaction line items and running total
-    // ================================================================
+    // ===============================================================
     private static void verifyTransactionTotal(String txnId) {
         List<TransactionItem> items = rptService.getSalesLineItemsByTransaction(txnId);
         if (items.isEmpty()) {

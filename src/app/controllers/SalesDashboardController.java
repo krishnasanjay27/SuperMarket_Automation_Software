@@ -5,17 +5,22 @@ import app.SceneNavigator;
 import app.SessionManager;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import model.Customer;
 import model.TransactionItem;
+import model.ReturnableItemDTO;
+import model.ReturnTransaction;
 import service.CustomerService;
 import service.TransactionService;
 import service.ReportService;
+import service.ReturnService;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +32,9 @@ public class SalesDashboardController {
     @FXML private Label totalLabel;
     @FXML private Label subtotalLabel;
     @FXML private Label discountSummaryLabel;
+
+    @FXML private VBox panelTransaction;
+    @FXML private VBox panelReturn;
 
     @FXML private TableView<TransactionItem>             itemsTable;
     @FXML private TableColumn<TransactionItem, String>   colItemCode;
@@ -41,9 +49,29 @@ public class SalesDashboardController {
     @FXML private TextField redeemPointsField;
     @FXML private Label     discountLabel;
 
+    // Return Panel controls
+    @FXML private TextField returnTxnIdField;
+    
+    @FXML private TableView<ReturnableItemDTO>             returnItemsTable;
+    @FXML private TableColumn<ReturnableItemDTO, String>   retItemCodeCol;
+    @FXML private TableColumn<ReturnableItemDTO, String>   retItemNameCol;
+    @FXML private TableColumn<ReturnableItemDTO, Integer>  retPurchasedQtyCol;
+    @FXML private TableColumn<ReturnableItemDTO, Integer>  retReturnedQtyCol;
+    @FXML private TableColumn<ReturnableItemDTO, Integer>  retRemainingQtyCol;
+    @FXML private TableColumn<ReturnableItemDTO, String>   retStatusCol;
+
+    @FXML private VBox returnHistoryBox;
+    @FXML private TableView<ReturnTransaction>             returnHistoryTable;
+    @FXML private TableColumn<ReturnTransaction, String>   histItemCodeCol;
+    @FXML private TableColumn<ReturnTransaction, Integer>  histQtyCol;
+    @FXML private TableColumn<ReturnTransaction, Double>   histRefundCol;
+    @FXML private TableColumn<ReturnTransaction, Object>   histDateCol;
+    @FXML private TableColumn<ReturnTransaction, String>   histReasonCol;
+
     private final TransactionService transactionService = new TransactionService();
     private final CustomerService    customerService    = new CustomerService();
     private final ReportService      reportService      = new ReportService();
+    private final ReturnService      returnService      = new ReturnService();
     private final SessionManager     session            = SessionManager.getInstance();
 
     private String lastFinalizedTxnId = null;
@@ -55,6 +83,21 @@ public class SalesDashboardController {
         colUnitPrice.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getUnitPrice()).asObject());
         colLineTotal.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getLineTotal()).asObject());
 
+        // Setup Return Items Table
+        retItemCodeCol    .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemCode()));
+        retItemNameCol    .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemName()));
+        retPurchasedQtyCol.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getPurchasedQty()).asObject());
+        retReturnedQtyCol .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getAlreadyReturnedQty()).asObject());
+        retRemainingQtyCol.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getRemainingReturnableQty()).asObject());
+        retStatusCol      .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getEligibilityStatus()));
+
+        // Setup Return History Table
+        histItemCodeCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemCode()));
+        histQtyCol     .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getQuantity()).asObject());
+        histRefundCol  .setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getRefundAmount()).asObject());
+        histDateCol    .setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getReturnDate()));
+        histReasonCol  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getReason()));
+
         if (staffIdLabel != null) {
             staffIdLabel.setText("Logged in as: " + session.getUserId());
         }
@@ -64,6 +107,21 @@ public class SalesDashboardController {
             transactionIdLabel.setText("Active Transaction: " + existing);
             refreshTable();
         }
+
+        showTransactionPanel();
+    }
+
+    @FXML private void showTransactionPanel() {
+        if (panelTransaction != null) { panelTransaction.setVisible(true); panelTransaction.setManaged(true); }
+        if (panelReturn != null)      { panelReturn.setVisible(false); panelReturn.setManaged(false); }
+    }
+
+    @FXML private void showReturnPanel() {
+        if (panelTransaction != null) { panelTransaction.setVisible(false); panelTransaction.setManaged(false); }
+        if (panelReturn != null)      { panelReturn.setVisible(true); panelReturn.setManaged(true); }
+        if (returnHistoryBox != null) { returnHistoryBox.setVisible(false); returnHistoryBox.setManaged(false); }
+        if (returnTxnIdField != null) { returnTxnIdField.clear(); }
+        if (returnItemsTable != null) { returnItemsTable.setItems(FXCollections.observableArrayList()); }
     }
 
     @FXML
@@ -119,10 +177,6 @@ public class SalesDashboardController {
                 "\nLoyalty Points: " + customer.getLoyaltyPoints());
     }
 
-    /**
-     * Shows a dialog to register a new customer.
-     * Returns the registered Customer or null if cancelled.
-     */
     private Customer showRegisterDialog(String phone) {
         Dialog<Customer> dialog = new Dialog<>();
         dialog.setTitle("Register New Customer");
@@ -203,7 +257,6 @@ public class SalesDashboardController {
 
         double discount = customerService.calculateDiscount(points);
 
-        // Calculate subtotal to check discount cap
         List<TransactionItem> items = itemsTable.getItems();
         double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
         if (discount > subtotal) discount = subtotal;
@@ -313,7 +366,6 @@ public class SalesDashboardController {
             return;
         }
 
-        // Read redemption input
         int pointsToRedeem = 0;
         String redeemText = redeemPointsField.getText();
         if (redeemText != null && !redeemText.isBlank()) {
@@ -426,7 +478,6 @@ public class SalesDashboardController {
         double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
         subtotalLabel.setText(String.format("₹ %.2f", subtotal));
 
-        // Re-apply any pending redemption discount
         int points = 0;
         String redeemText = redeemPointsField != null ? redeemPointsField.getText() : "";
         if (redeemText != null && !redeemText.isBlank()) {
@@ -464,5 +515,122 @@ public class SalesDashboardController {
         dialog.setHeaderText(null);
         dialog.setContentText(message);
         return dialog.showAndWait().map(String::trim).filter(s -> !s.isEmpty()).orElse(null);
+    }
+
+    // ──────────────────────────────────────────
+    // RETURN MANAGEMENT HANDLERS
+    // ──────────────────────────────────────────
+
+    @FXML
+    private void handleLoadReturnItems() {
+        String txnId = returnTxnIdField.getText();
+        if (txnId == null || txnId.isBlank()) {
+            AlertHelper.showError("Validation Error", "Please enter a Transaction ID.");
+            return;
+        }
+        txnId = txnId.trim();
+
+        if (returnService.validateTransaction(txnId) == null) {
+            AlertHelper.showError("Invalid Transaction",
+                    "Transaction '" + txnId + "' does not exist or is not FINALIZED.");
+            return;
+        }
+
+        List<ReturnableItemDTO> items = returnService.getReturnableItems(txnId);
+        returnItemsTable.setItems(FXCollections.observableArrayList(items));
+
+        if (items.isEmpty()) {
+            AlertHelper.showInfo("No Items", "No returnable items found for this transaction.");
+        }
+
+        if (returnHistoryBox != null) {
+            returnHistoryBox.setVisible(false);
+            returnHistoryBox.setManaged(false);
+        }
+    }
+
+    @FXML
+    private void handleProcessReturn() {
+        ReturnableItemDTO selected = returnItemsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            AlertHelper.showError("No Selection", "Please select an item from the table first.");
+            return;
+        }
+
+        if (!"Returnable".equals(selected.getEligibilityStatus())) {
+            String expMsg = "";
+            if (selected.getTransactionDate() != null) {
+                expMsg = " Transaction Date: " + selected.getTransactionDate().toLocalDate() + 
+                         ". Max return days: " + selected.getReturnDurationDays();
+            }
+            AlertHelper.showError("Not Eligible", "This item is marked as Not Returnable." + expMsg);
+            return;
+        }
+
+        String txnId = returnTxnIdField.getText().trim();
+        String itemCode = selected.getItemCode();
+        int remaining = selected.getRemainingReturnableQty();
+
+        String qtyStr = prompt("Process Return", "Returning: " + selected.getItemName() + 
+                               "\nRemaining eligible: " + remaining + "\nEnter return quantity:");
+        if (qtyStr == null) return;
+
+        int qty;
+        try {
+            qty = Integer.parseInt(qtyStr.trim());
+        } catch (NumberFormatException e) {
+            AlertHelper.showError("Validation Error", "Quantity must be a whole number.");
+            return;
+        }
+
+        if (qty <= 0 || qty > remaining) {
+            AlertHelper.showError("Invalid Quantity", "Quantity must be between 1 and " + remaining + ".");
+            return;
+        }
+
+        // Using ChoiceDialog for predefined reasons
+        List<String> reasons = List.of("Damaged", "Expired", "Wrong Item", "Customer Changed Mind", "Other");
+        ChoiceDialog<String> reasonDialog = new ChoiceDialog<>("Customer Changed Mind", reasons);
+        reasonDialog.setTitle("Return Reason");
+        reasonDialog.setHeaderText("Select the reason for returning " + qty + "x " + selected.getItemName());
+        reasonDialog.setContentText("Reason:");
+        Optional<String> result = reasonDialog.showAndWait();
+        if (result.isEmpty()) return;
+        
+        String reason = result.get();
+        String processedBy = session.getUserId();
+
+        boolean ok = returnService.processReturn(txnId, itemCode, qty, processedBy, reason);
+        if (ok) {
+            AlertHelper.showInfo("Return Successful", 
+                "Return Processed Successfully.\n\nItem: " + selected.getItemName() +
+                "\nQuantity: " + qty + "\nRefund Amount: ₹" + String.format("%.2f", selected.getUnitPrice() * qty));
+            // Refresh table
+            handleLoadReturnItems();
+        } else {
+            AlertHelper.showError("Error", "Could not process return. Check database logs.");
+        }
+    }
+
+    @FXML
+    private void handleViewReturnHistory() {
+        String txnId = returnTxnIdField.getText();
+        if (txnId == null || txnId.isBlank()) {
+            AlertHelper.showError("Validation Error", "Please enter a Transaction ID first.");
+            return;
+        }
+        txnId = txnId.trim();
+
+        List<ReturnTransaction> history = returnService.getReturnHistory(txnId);
+        returnHistoryTable.setItems(FXCollections.observableArrayList(history));
+        
+        if (returnHistoryBox != null) {
+            returnHistoryBox.setVisible(true);
+            returnHistoryBox.setManaged(true);
+        }
+
+        if (history.isEmpty()) {
+            AlertHelper.showInfo("Return History", "No past returns found for transaction: " + txnId);
+        }
     }
 }

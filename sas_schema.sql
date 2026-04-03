@@ -311,4 +311,38 @@ CREATE INDEX idx_Item_Vendor ON Item (vendorId);
 
 
 
+-- ============================================================
+-- EXTENSION: Return Policy Module
+-- ============================================================
+
+ALTER TABLE Item
+    ADD COLUMN returnDurationDays INT NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS ReturnTransaction (
+    returnId        INT            NOT NULL AUTO_INCREMENT,
+    transactionId   VARCHAR(50)    NOT NULL,
+    itemCode        VARCHAR(30)    NOT NULL,
+    quantity        INT            NOT NULL CHECK (quantity > 0),
+    refundAmount    DECIMAL(10,2)  NOT NULL,
+    returnDate      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processedBy     VARCHAR(50)    NOT NULL,
+    reason          VARCHAR(255)   NULL,
+
+    CONSTRAINT pk_ReturnTransaction          PRIMARY KEY (returnId),
+    CONSTRAINT fk_Return_SalesTransaction    FOREIGN KEY (transactionId)
+        REFERENCES SalesTransaction (transactionId)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_Return_Item                FOREIGN KEY (itemCode)
+        REFERENCES Item (itemCode)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_Return_ProcessedBy         FOREIGN KEY (processedBy)
+        REFERENCES UserAccount (userId)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_Return_TxnItem    ON ReturnTransaction (transactionId, itemCode);
+CREATE INDEX idx_Return_processedBy ON ReturnTransaction (processedBy);
 

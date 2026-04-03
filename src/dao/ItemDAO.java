@@ -1,7 +1,6 @@
 package dao;
 
 import config.DBConnection;
-import config.DBConnection;
 import model.Item;
 import model.LowStockVendorAlert;
 
@@ -13,15 +12,15 @@ import java.util.List;
 public class ItemDAO {
 
     private static final String SQL_ADD_ITEM =
-            "INSERT INTO Item (itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO Item (itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at, returnDurationDays) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SQL_GET_BY_CODE =
-            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at " +
+            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at, returnDurationDays " +
             "FROM Item WHERE itemCode = ?";
 
     private static final String SQL_GET_ALL =
-            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at " +
+            "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at, returnDurationDays " +
             "FROM Item ORDER BY category, itemName";
 
     private static final String SQL_UPDATE_PRICE =
@@ -55,6 +54,7 @@ public class ItemDAO {
             LocalDateTime createdAt = (item.getCreatedAt() != null)
                                       ? item.getCreatedAt() : LocalDateTime.now();
             stmt.setTimestamp(8, Timestamp.valueOf(createdAt));
+            stmt.setInt(9, item.getReturnDurationDays());
 
             success = stmt.executeUpdate() > 0;
 
@@ -147,8 +147,7 @@ public class ItemDAO {
         String delItemSql  = "DELETE FROM Item WHERE itemCode = ?";
 
         try (Connection conn = DBConnection.getConnection()) {
-            
-            // 1. Check if used in transactions
+
             try (PreparedStatement checkStmt = conn.prepareStatement(countTxnSql)) {
                 checkStmt.setString(1, itemCode);
                 try (ResultSet rs = checkStmt.executeQuery()) {
@@ -159,7 +158,6 @@ public class ItemDAO {
                 }
             }
 
-            // 2. Perform Atomic Deletion
             conn.setAutoCommit(false);
             try {
                 try (PreparedStatement stmtHist = conn.prepareStatement(delPriceSql)) {
@@ -175,7 +173,7 @@ public class ItemDAO {
                     stmtItem.setString(1, itemCode);
                     itemsDeleted = stmtItem.executeUpdate();
                 }
-                
+
                 if (itemsDeleted > 0) {
                     conn.commit();
                     System.out.println("Item '" + itemCode + "' completely removed.");
@@ -187,7 +185,7 @@ public class ItemDAO {
                 }
             } catch (SQLException e) {
                 conn.rollback();
-                throw e; // rethrow to be caught by outer block
+                throw e;
             } finally {
                 conn.setAutoCommit(true);
             }
@@ -201,7 +199,7 @@ public class ItemDAO {
     public boolean updateItem(Item item) {
         boolean success = false;
 
-        String sql = "UPDATE Item SET itemName=?, price=?, costPrice=?, reorderLevel=?, category=?, vendorId=? WHERE itemCode=?";
+        String sql = "UPDATE Item SET itemName=?, price=?, costPrice=?, reorderLevel=?, category=?, vendorId=?, returnDurationDays=? WHERE itemCode=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -211,14 +209,15 @@ public class ItemDAO {
             stmt.setDouble(3, item.getCostPrice());
             stmt.setInt(4, item.getReorderLevel());
             stmt.setString(5, item.getCategory());
-            
+
             if (item.getVendorId() != null) {
                 stmt.setInt(6, item.getVendorId());
             } else {
                 stmt.setNull(6, Types.INTEGER);
             }
-            
-            stmt.setString(7, item.getItemCode());
+
+            stmt.setInt(7, item.getReturnDurationDays());
+            stmt.setString(8, item.getItemCode());
 
             success = stmt.executeUpdate() > 0;
 
@@ -232,7 +231,7 @@ public class ItemDAO {
     public List<Item> searchItemsByName(String keyword) {
         List<Item> items = new ArrayList<>();
 
-        String sql = "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at " +
+        String sql = "SELECT itemCode, itemName, price, costPrice, reorderLevel, category, vendorId, created_at, returnDurationDays " +
                      "FROM Item WHERE itemName LIKE ? ORDER BY itemName";
 
         try (Connection conn = DBConnection.getConnection();
@@ -261,6 +260,7 @@ public class ItemDAO {
         item.setCostPrice(rs.getDouble("costPrice"));
         item.setReorderLevel(rs.getInt("reorderLevel"));
         item.setCategory(rs.getString("category"));
+        item.setReturnDurationDays(rs.getInt("returnDurationDays"));
 
         int vendorId = rs.getInt("vendorId");
         item.setVendorId(rs.wasNull() ? null : vendorId);

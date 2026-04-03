@@ -32,6 +32,8 @@
             <padding><Insets top="20" right="14" bottom="20" left="14"/></padding>
 
             <Label text="TRANSACTION" styleClass="sidebar-section"/>
+            <Button id="showTxnPanelBtn" text="🛒  Active Transaction"  onAction="#showTransactionPanel"      styleClass="sidebar-btn" maxWidth="Infinity"/>
+            <Separator/>
             <Button id="createTxnBtn"   text="+ Create Transaction"   onAction="#handleCreateTransaction"   styleClass="sidebar-btn" maxWidth="Infinity"/>
             <Button id="addItemBtn"     text="+ Add Item"             onAction="#handleAddItem"             styleClass="sidebar-btn" maxWidth="Infinity"/>
             <Button id="updateQtyBtn"   text="✎  Update Quantity"     onAction="#handleUpdateQuantity"      styleClass="sidebar-btn" maxWidth="Infinity"/>
@@ -45,85 +47,158 @@
             <Separator/>
 
             <Button id="printReceiptBtn" text="🖨  Print Receipt"      onAction="#handlePrintReceipt"        styleClass="sidebar-btn-blue"  maxWidth="Infinity"/>
+
+            <Separator/>
+            <Label text="RETURNS" styleClass="sidebar-section"/>
+            <Button id="showReturnBtn"  text="↩  Return Management"   onAction="#showReturnPanel"           styleClass="sidebar-btn" maxWidth="Infinity"/>
         </VBox>
     </left>
 
     <!-- Main Content -->
     <center>
-        <VBox styleClass="content-area" spacing="16">
-            <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
+        <StackPane>
+            <!-- Transaction Panel -->
+            <VBox fx:id="panelTransaction" styleClass="content-area" spacing="16">
+                <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
 
-            <!-- Page header -->
-            <HBox alignment="CENTER_LEFT" spacing="12">
-                <Label text="Active Transaction" styleClass="welcome-label"/>
-                <Region HBox.hgrow="ALWAYS"/>
-            </HBox>
-
-            <!-- Customer Panel Card -->
-            <VBox styleClass="table-card" spacing="10">
-                <Label text="Customer &amp; Loyalty Points" styleClass="card-title"/>
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Label text="Phone:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
-                    <TextField fx:id="customerPhoneField" promptText="Enter customer phone"
-                               prefWidth="180" id="customerPhoneField"/>
-                    <Button id="loadCustomerBtn" text="Load / Register"
-                            onAction="#handleLoadCustomer" styleClass="sidebar-btn"/>
+                <!-- Page header -->
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="Active Transaction" styleClass="welcome-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
                 </HBox>
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Customer:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
-                    <Label fx:id="customerNameLabel" text="—"
-                           style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
-                    <Label text="  Points Available:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
-                    <Label fx:id="availablePointsLabel" text="—"
-                           style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#2C7BE5;"/>
-                </HBox>
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Label text="Redeem Points:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
-                    <TextField fx:id="redeemPointsField" promptText="0" prefWidth="100" id="redeemPointsField"/>
-                    <Button id="applyRedemptionBtn" text="Apply"
-                            onAction="#handleApplyRedemption" styleClass="sidebar-btn"/>
-                    <Label fx:id="discountLabel" text="Discount: ₹ 0.00"
-                           style="-fx-font-size:13px; -fx-text-fill:#16A34A; -fx-font-weight:bold;"/>
-                </HBox>
-            </VBox>
 
-            <!-- Transaction Items Table Card -->
-            <VBox styleClass="table-card" spacing="10" VBox.vgrow="ALWAYS">
-                <Label text="Items in Transaction" styleClass="card-title"/>
-
-                <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS" maxWidth="Infinity">
-                    <columns>
-                        <TableColumn fx:id="colItemCode"  text="Item Code"   prefWidth="160"/>
-                        <TableColumn fx:id="colQty"       text="Quantity"    prefWidth="110"/>
-                        <TableColumn fx:id="colUnitPrice" text="Unit Price"  prefWidth="130"/>
-                        <TableColumn fx:id="colLineTotal" text="Line Total"  prefWidth="140"/>
-                    </columns>
-                    <placeholder>
-                        <Label text="Create a transaction and add items to see them here."
-                               style="-fx-text-fill:#ADB5BD; -fx-font-size:13px;"/>
-                    </placeholder>
-                </TableView>
-
-                <!-- Running Total Section -->
-                <VBox spacing="4" alignment="CENTER_RIGHT">
-                    <HBox alignment="CENTER_RIGHT" spacing="10">
-                        <Label text="Subtotal:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
-                        <Label fx:id="subtotalLabel" text="₹ 0.00"
+                <!-- Customer Panel Card -->
+                <VBox styleClass="table-card" spacing="10">
+                    <Label text="Customer &amp; Loyalty Points" styleClass="card-title"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Phone:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                        <TextField fx:id="customerPhoneField" promptText="Enter customer phone"
+                                   prefWidth="180" id="customerPhoneField"/>
+                        <Button id="loadCustomerBtn" text="Load / Register"
+                                onAction="#handleLoadCustomer" styleClass="sidebar-btn"/>
+                    </HBox>
+                    <HBox spacing="20" alignment="CENTER_LEFT">
+                        <Label text="Customer:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                        <Label fx:id="customerNameLabel" text="—"
                                style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                        <Label text="  Points Available:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                        <Label fx:id="availablePointsLabel" text="—"
+                               style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#2C7BE5;"/>
                     </HBox>
-                    <HBox alignment="CENTER_RIGHT" spacing="10">
-                        <Label text="Loyalty Discount:" style="-fx-font-size:13px; -fx-text-fill:#16A34A;"/>
-                        <Label fx:id="discountSummaryLabel" text="- ₹ 0.00"
-                               style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"/>
-                    </HBox>
-                    <HBox alignment="CENTER_RIGHT" spacing="10">
-                        <Label text="Final Total:" style="-fx-font-size:14px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
-                        <Label fx:id="totalLabel" text="₹ 0.00" styleClass="total-label"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Redeem Points:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                        <TextField fx:id="redeemPointsField" promptText="0" prefWidth="100" id="redeemPointsField"/>
+                        <Button id="applyRedemptionBtn" text="Apply"
+                                onAction="#handleApplyRedemption" styleClass="sidebar-btn"/>
+                        <Label fx:id="discountLabel" text="Discount: ₹ 0.00"
+                               style="-fx-font-size:13px; -fx-text-fill:#16A34A; -fx-font-weight:bold;"/>
                     </HBox>
                 </VBox>
+
+                <!-- Transaction Items Table Card -->
+                <VBox styleClass="table-card" spacing="10" VBox.vgrow="ALWAYS">
+                    <Label text="Items in Transaction" styleClass="card-title"/>
+
+                    <TableView fx:id="itemsTable" VBox.vgrow="ALWAYS" maxWidth="Infinity">
+                        <columns>
+                            <TableColumn fx:id="colItemCode"  text="Item Code"   prefWidth="160"/>
+                            <TableColumn fx:id="colQty"       text="Quantity"    prefWidth="110"/>
+                            <TableColumn fx:id="colUnitPrice" text="Unit Price"  prefWidth="130"/>
+                            <TableColumn fx:id="colLineTotal" text="Line Total"  prefWidth="140"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="Create a transaction and add items to see them here."
+                                   style="-fx-text-fill:#ADB5BD; -fx-font-size:13px;"/>
+                        </placeholder>
+                    </TableView>
+
+                    <!-- Running Total Section -->
+                    <VBox spacing="4" alignment="CENTER_RIGHT">
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <Label text="Subtotal:" style="-fx-font-size:13px; -fx-text-fill:#495057;"/>
+                            <Label fx:id="subtotalLabel" text="₹ 0.00"
+                                   style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#212529;"/>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <Label text="Loyalty Discount:" style="-fx-font-size:13px; -fx-text-fill:#16A34A;"/>
+                            <Label fx:id="discountSummaryLabel" text="- ₹ 0.00"
+                                   style="-fx-font-size:13px; -fx-font-weight:bold; -fx-text-fill:#16A34A;"/>
+                        </HBox>
+                        <HBox alignment="CENTER_RIGHT" spacing="10">
+                            <Label text="Final Total:" style="-fx-font-size:14px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                            <Label fx:id="totalLabel" text="₹ 0.00" styleClass="total-label"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+
             </VBox>
 
-        </VBox>
+            <!-- Return Panel -->
+            <VBox fx:id="panelReturn" styleClass="content-area" spacing="16" visible="false" managed="false">
+                <padding><Insets top="20" right="24" bottom="20" left="24"/></padding>
+
+                <!-- Page header -->
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label text="Return Management" styleClass="welcome-label"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <!-- Load Transaction Card for Returns -->
+                <VBox styleClass="table-card" spacing="10">
+                    <Label text="Load Transaction for Return" styleClass="card-title"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Transaction ID:" style="-fx-font-size:13px; -fx-text-fill:#495057; -fx-font-weight:bold;"/>
+                        <TextField fx:id="returnTxnIdField" promptText="Enter Transaction ID"
+                                   prefWidth="220" id="returnTxnIdField"/>
+                        <Button id="loadReturnItemsBtn" text="Load Items"
+                                onAction="#handleLoadReturnItems" styleClass="sidebar-btn"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button id="viewReturnHistoryBtn" text="View Return History"
+                                onAction="#handleViewReturnHistory" styleClass="sidebar-btn"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Return Items Table Card -->
+                <VBox styleClass="table-card" spacing="10" VBox.vgrow="ALWAYS">
+                    <Label text="Eligible Return Items" styleClass="card-title"/>
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Button id="processReturnBtn" text="Process Return" onAction="#handleProcessReturn" styleClass="sidebar-btn-blue"/>
+                    </HBox>
+                    <TableView fx:id="returnItemsTable" VBox.vgrow="ALWAYS" maxWidth="Infinity">
+                        <columns>
+                            <TableColumn fx:id="retItemCodeCol"     text="Item Code"          prefWidth="100"/>
+                            <TableColumn fx:id="retItemNameCol"     text="Item Name"          prefWidth="160"/>
+                            <TableColumn fx:id="retPurchasedQtyCol" text="Purchased"          prefWidth="80"/>
+                            <TableColumn fx:id="retReturnedQtyCol"  text="Returned"           prefWidth="80"/>
+                            <TableColumn fx:id="retRemainingQtyCol" text="Remaining"          prefWidth="80"/>
+                            <TableColumn fx:id="retStatusCol"       text="Eligibility Status" prefWidth="120"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="Load a transaction to view eligible return items."
+                                   style="-fx-text-fill:#ADB5BD; -fx-font-size:13px;"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
+                <!-- Return History Table Card (Initially hidden or shown in popup? Let's inline it) -->
+                <VBox fx:id="returnHistoryBox" styleClass="table-card" spacing="10" VBox.vgrow="ALWAYS" visible="false" managed="false">
+                    <Label text="Return History for Transaction" styleClass="card-title"/>
+                    <TableView fx:id="returnHistoryTable" VBox.vgrow="ALWAYS" maxWidth="Infinity">
+                        <columns>
+                            <TableColumn fx:id="histItemCodeCol"     text="Item Code"     prefWidth="100"/>
+                            <TableColumn fx:id="histQtyCol"          text="Quantity"      prefWidth="80"/>
+                            <TableColumn fx:id="histRefundCol"       text="Refund Amt"    prefWidth="100"/>
+                            <TableColumn fx:id="histDateCol"         text="Return Date"   prefWidth="160"/>
+                            <TableColumn fx:id="histReasonCol"       text="Reason"        prefWidth="180"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="No return history found."
+                                   style="-fx-text-fill:#ADB5BD; -fx-font-size:13px;"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+            </VBox>
+        </StackPane>
     </center>
 
 </BorderPane>

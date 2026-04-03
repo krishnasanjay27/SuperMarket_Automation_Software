@@ -50,6 +50,7 @@ public class ManagerDashboardController {
     @FXML private TextField aiReorderLevel;
     @FXML private TextField aiCategory;
     @FXML private TextField aiInitialStock;
+    @FXML private TextField aiReturnDuration;
 
     @FXML private ComboBox<Vendor> aiVendorCombo;
 
@@ -246,29 +247,32 @@ public class ManagerDashboardController {
         String reorderStr = aiReorderLevel.getText().trim();
         String category   = aiCategory.getText().trim();
         String stockStr   = aiInitialStock.getText().trim();
+        String returnDurStr = aiReturnDuration != null ? aiReturnDuration.getText().trim() : "0";
 
         if (itemCode.isEmpty() || itemName.isEmpty() || priceStr.isEmpty()
                 || costStr.isEmpty() || reorderStr.isEmpty()
-                || category.isEmpty() || stockStr.isEmpty()) {
+                || category.isEmpty() || stockStr.isEmpty() || returnDurStr.isEmpty()) {
             AlertHelper.showError("Validation Error", "All fields are required.");
             return;
         }
 
         double price, costPrice;
-        int reorderLevel, initialStock;
+        int reorderLevel, initialStock, returnDur;
         try {
             price        = Double.parseDouble(priceStr);
             costPrice    = Double.parseDouble(costStr);
             reorderLevel = Integer.parseInt(reorderStr);
             initialStock = Integer.parseInt(stockStr);
+            returnDur    = Integer.parseInt(returnDurStr);
         } catch (NumberFormatException e) {
             AlertHelper.showError("Validation Error",
-                    "Price/Cost must be decimals; Reorder Level/Stock must be integers.");
+                    "Price/Cost must be decimals; Reorder Level/Stock/Return Duration must be integers.");
             return;
         }
 
         Item item = new Item(itemCode, itemName, price, costPrice,
                 reorderLevel, category, LocalDateTime.now());
+        item.setReturnDurationDays(returnDur);
 
         Vendor selectedVendor = aiVendorCombo.getSelectionModel().getSelectedItem();
         if (selectedVendor != null) {
@@ -289,6 +293,7 @@ public class ManagerDashboardController {
         aiItemCode.clear(); aiItemName.clear(); aiPrice.clear();
         aiCostPrice.clear(); aiReorderLevel.clear(); aiCategory.clear();
         aiInitialStock.clear(); aiVendorCombo.getSelectionModel().clearSelection();
+        if (aiReturnDuration != null) aiReturnDuration.clear();
     }
 
     // ── Update Item Price ─────────────────────────────────────────────────────

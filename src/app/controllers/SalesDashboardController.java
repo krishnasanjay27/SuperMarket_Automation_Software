@@ -589,7 +589,7 @@ public class SalesDashboardController {
         }
 
         // Using ChoiceDialog for predefined reasons
-        List<String> reasons = List.of("Damaged", "Expired", "Wrong Item", "Customer Changed Mind", "Other");
+        List<String> reasons = List.of("Damaged", "Wrong Item", "Customer Changed Mind");
         ChoiceDialog<String> reasonDialog = new ChoiceDialog<>("Customer Changed Mind", reasons);
         reasonDialog.setTitle("Return Reason");
         reasonDialog.setHeaderText("Select the reason for returning " + qty + "x " + selected.getItemName());
@@ -602,9 +602,11 @@ public class SalesDashboardController {
 
         boolean ok = returnService.processReturn(txnId, itemCode, qty, processedBy, reason);
         if (ok) {
+            double refundAmount = selected.getUnitPrice() * qty;
             AlertHelper.showInfo("Return Successful", 
                 "Return Processed Successfully.\n\nItem: " + selected.getItemName() +
-                "\nQuantity: " + qty + "\nRefund Amount: ₹" + String.format("%.2f", selected.getUnitPrice() * qty));
+                "\nQuantity: " + qty + "\nRefund Equivalent: ₹" + String.format("%.2f", refundAmount) + 
+                "\n\n(Refund amount has been credited as Loyalty Store Points if a customer account was linked)");
             // Refresh table
             handleLoadReturnItems();
         } else {

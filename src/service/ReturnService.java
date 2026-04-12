@@ -15,10 +15,12 @@ public class ReturnService {
 
     private final ReturnDAO            returnDAO;
     private final SalesTransactionDAO  salesTransactionDAO;
+    private final CustomerService      customerService;
 
     public ReturnService() {
         this.returnDAO           = new ReturnDAO();
         this.salesTransactionDAO = new SalesTransactionDAO();
+        this.customerService     = new CustomerService();
     }
 
     /**
@@ -124,12 +126,34 @@ public class ReturnService {
             conn.setAutoCommit(false);
             try {
                 boolean inserted    = returnDAO.insertReturnRecord(conn, rt);
-                boolean inventoryOk = returnDAO.updateInventoryAfterReturn(conn, itemCode, quantity);
+                boolean inventoryOk = true;
+                
+                if (!"Damaged".equalsIgnoreCase(reason)) {
+                    inventoryOk = returnDAO.updateInventoryAfterReturn(conn, itemCode, quantity);
+                }
 
                 if (inserted && inventoryOk) {
                     conn.commit();
                     System.out.println("Return processed: " + quantity + "x " + itemCode
                                        + " → refund ₹" + String.format("%.2f", refundAmount));
+                    
+                    // Handle loyalty points: deduct original logic & credit refund value
+                    SalesTransaction txn = salesTransactionDAO.getTransactionById(transactionId);
+                    if (txn != null && txn.getCustomerId() != null && txn.getCustomerId() > 0) {
+                        int pointsToDeduct = customerService.calculateEarnedPoints(refundAmount);
+                        if (pointsToDeduct > 0) {
+                            customerService.deductLoyaltyPoints(txn.getCustomerId(), pointsToDeduct);
+                            System.out.println("Deducted " + pointsToDeduct + " points from customer " + txn.getCustomerId());
+                        }
+
+                        // Store credit refund: 1 point = 1 rupee
+                        int pointsToRefund = (int) refundAmount;
+                        if (pointsToRefund > 0) {
+                            customerService.addLoyaltyPoints(txn.getCustomerId(), pointsToRefund);
+                            System.out.println("Added " + pointsToRefund + " points as store credit to customer " + txn.getCustomerId());
+                        }
+                    }
+
                     return true;
                 } else {
                     conn.rollback();

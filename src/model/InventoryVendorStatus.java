@@ -9,8 +9,12 @@ public class InventoryVendorStatus {
     private String vendorName;
     private LocalDateTime lastUpdated;
     private String updatedBy;
+    private int returnDurationDays;
 
     public InventoryVendorStatus() {}
+
+    public int getReturnDurationDays() { return returnDurationDays; }
+    public void setReturnDurationDays(int returnDurationDays) { this.returnDurationDays = returnDurationDays; }
 
     public String getItemCode() { return itemCode; }
     public void setItemCode(String itemCode) { this.itemCode = itemCode; }

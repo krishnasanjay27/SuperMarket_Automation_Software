@@ -158,7 +158,7 @@ public class InventoryRecordDAO {
     public List<model.InventoryVendorStatus> getInventoryStatusWithVendor() {
         List<model.InventoryVendorStatus> list = new ArrayList<>();
 
-        String sql = "SELECT ir.itemCode, i.itemName, ir.stockLevel, v.vendorName, ir.lastUpdated, ir.updatedBy " +
+        String sql = "SELECT ir.itemCode, i.itemName, ir.stockLevel, v.vendorName, ir.lastUpdated, ir.updatedBy, i.returnDurationDays " +
                      "FROM InventoryRecord ir " +
                      "JOIN Item i ON ir.itemCode = i.itemCode " +
                      "LEFT JOIN Vendor v ON i.vendorId = v.vendorId " +
@@ -174,6 +174,7 @@ public class InventoryRecordDAO {
                 status.setItemName(rs.getString("itemName"));
                 status.setStockLevel(rs.getInt("stockLevel"));
                 status.setVendorName(rs.getString("vendorName"));
+                status.setReturnDurationDays(rs.getInt("returnDurationDays"));
                 
                 Timestamp ts = rs.getTimestamp("lastUpdated");
                 if (ts != null) {

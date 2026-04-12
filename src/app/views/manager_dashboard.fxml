@@ -192,6 +192,7 @@
                                 <TableColumn fx:id="invItemNameCol"    text="Item Name"   prefWidth="200"/>
                                 <TableColumn fx:id="invStockCol"       text="Stock"       prefWidth="80"/>
                                 <TableColumn fx:id="invVendorCol"      text="Vendor"      prefWidth="140"/>
+                                <TableColumn fx:id="invReturnDurationCol" text="Return Days" prefWidth="100"/>
                                 <TableColumn fx:id="invUpdatedByCol"   text="Updated By"  prefWidth="100"/>
                                 <TableColumn fx:id="invLastUpdatedCol" text="Last Updated" prefWidth="180"/>
                             </columns>

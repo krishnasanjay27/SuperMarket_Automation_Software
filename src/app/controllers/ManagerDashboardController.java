@@ -71,6 +71,7 @@ public class ManagerDashboardController {
     @FXML private TableColumn<model.InventoryVendorStatus, String>  invItemNameCol;
     @FXML private TableColumn<model.InventoryVendorStatus, Integer> invStockCol;
     @FXML private TableColumn<model.InventoryVendorStatus, String>  invVendorCol;
+    @FXML private TableColumn<model.InventoryVendorStatus, Integer> invReturnDurationCol;
     @FXML private TableColumn<model.InventoryVendorStatus, String>  invUpdatedByCol;
     @FXML private TableColumn<model.InventoryVendorStatus, Object>  invLastUpdatedCol;
 
@@ -645,6 +646,7 @@ public class ManagerDashboardController {
         safe(invStockCol)      .setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getStockLevel()).asObject());
         safe(invVendorCol)     .setCellValueFactory(d -> new SimpleStringProperty(
                 d.getValue().getVendorName() != null ? d.getValue().getVendorName() : "N/A"));
+        safe(invReturnDurationCol).setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getReturnDurationDays()).asObject());
         safe(invUpdatedByCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getUpdatedBy()));
         safe(invLastUpdatedCol).setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getLastUpdated()));
 

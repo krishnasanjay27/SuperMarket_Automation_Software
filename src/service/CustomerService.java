@@ -77,6 +77,13 @@ public class CustomerService {
         return customerDAO.updateLoyaltyPoints(customerId, current - pointsToUse);
     }
 
+    public boolean deductLoyaltyPoints(int customerId, int pointsToDeduct) {
+        if (pointsToDeduct <= 0) return true;
+        int current = getAvailablePoints(customerId);
+        int newPoints = Math.max(0, current - pointsToDeduct);
+        return customerDAO.updateLoyaltyPoints(customerId, newPoints);
+    }
+
     public int calculateEarnedPoints(double subtotal) {
         return (int) (subtotal / 100);
     }

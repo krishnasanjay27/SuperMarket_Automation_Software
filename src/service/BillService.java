@@ -26,6 +26,14 @@ public class BillService {
         this.txnItemDAO = new TransactionItemDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public BillService(BillDAO billDAO, SalesTransactionDAO txnDAO,
+                       TransactionItemDAO txnItemDAO) {
+        this.billDAO    = billDAO;
+        this.txnDAO     = txnDAO;
+        this.txnItemDAO = txnItemDAO;
+    }
+
     public Bill generateBill(String transactionId) {
         Bill existing = billDAO.getBillByTransactionId(transactionId);
         if (existing != null) {

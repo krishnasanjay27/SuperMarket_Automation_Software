@@ -14,6 +14,11 @@ public class VendorService {
         this.vendorDAO = new VendorDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public VendorService(VendorDAO vendorDAO) {
+        this.vendorDAO = vendorDAO;
+    }
+
     public boolean addVendor(String vendorName, String phone, String email, String address) {
         if (vendorName == null || vendorName.isBlank()) {
             System.err.println("addVendor() failed - vendorName is required.");

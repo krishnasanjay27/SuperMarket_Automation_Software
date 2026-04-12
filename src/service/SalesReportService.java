@@ -16,6 +16,11 @@ public class SalesReportService {
         this.salesReportDAO = new SalesReportDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public SalesReportService(SalesReportDAO salesReportDAO) {
+        this.salesReportDAO = salesReportDAO;
+    }
+
     public List<ProfitBySaleDTO> loadProfitBySaleReport(LocalDate start, LocalDate end, int limit) {
         if (start == null || end == null) {
             System.err.println("loadProfitBySaleReport() failed - start and end dates must not be null.");

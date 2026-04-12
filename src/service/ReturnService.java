@@ -23,6 +23,14 @@ public class ReturnService {
         this.customerService     = new CustomerService();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public ReturnService(ReturnDAO returnDAO, SalesTransactionDAO salesTransactionDAO,
+                         CustomerService customerService) {
+        this.returnDAO           = returnDAO;
+        this.salesTransactionDAO = salesTransactionDAO;
+        this.customerService     = customerService;
+    }
+
     /**
      * Validates that the transaction exists AND is FINALIZED.
      * Adjustment 4: returns are blocked for any other status.

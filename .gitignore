@@ -46,3 +46,9 @@ target/
 *.tmp
 *.swp
 *.bak
+
+# ===============================
+# Maven (local installation)
+# ===============================
+apache-maven-*/
+maven.tar.gz

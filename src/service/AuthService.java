@@ -13,6 +13,11 @@ public class AuthService {
         this.userDAO = new UserAccountDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public AuthService(UserAccountDAO userDAO) {
+        this.userDAO = userDAO;
+    }
+
     public UserAccount login(String userId, String password) {
         if (userId == null || userId.isBlank()) {
             System.err.println("login() failed – userId must not be empty.");

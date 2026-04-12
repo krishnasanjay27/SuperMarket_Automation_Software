@@ -31,6 +31,18 @@ public class TransactionService {
         this.customerService = new CustomerService();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public TransactionService(SalesTransactionDAO txnDAO, TransactionItemDAO txnItemDAO,
+                              InventoryRecordDAO inventoryDAO, ItemDAO itemDAO,
+                              BillDAO billDAO, CustomerService customerService) {
+        this.txnDAO          = txnDAO;
+        this.txnItemDAO      = txnItemDAO;
+        this.inventoryDAO    = inventoryDAO;
+        this.itemDAO         = itemDAO;
+        this.billDAO         = billDAO;
+        this.customerService = customerService;
+    }
+
     public String createTransaction(String salesStaffId) {
         if (salesStaffId == null || salesStaffId.isBlank()) {
             System.err.println("createTransaction() failed – salesStaffId must not be empty.");

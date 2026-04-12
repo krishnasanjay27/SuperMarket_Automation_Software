@@ -11,6 +11,11 @@ public class ItemService {
         this.itemDAO = new ItemDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public ItemService(ItemDAO itemDAO) {
+        this.itemDAO = itemDAO;
+    }
+
     /**
      * Updates an item's details, including its vendorId.
      */

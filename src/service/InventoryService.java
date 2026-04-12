@@ -22,6 +22,14 @@ public class InventoryService {
         this.priceHistoryDAO = new PriceHistoryDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public InventoryService(ItemDAO itemDAO, InventoryRecordDAO inventoryDAO,
+                            PriceHistoryDAO priceHistoryDAO) {
+        this.itemDAO         = itemDAO;
+        this.inventoryDAO    = inventoryDAO;
+        this.priceHistoryDAO = priceHistoryDAO;
+    }
+
     public boolean addNewItem(Item item, int initialStock, String updatedBy) {
         if (item == null) {
             System.err.println("addNewItem() failed – item must not be null.");

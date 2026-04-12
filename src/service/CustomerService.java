@@ -16,6 +16,11 @@ public class CustomerService {
         this.customerDAO = new CustomerDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public CustomerService(CustomerDAO customerDAO) {
+        this.customerDAO = customerDAO;
+    }
+
     public Customer registerCustomerIfNotExists(String phone, String name,
                                                 String email, String address) {
         if (!isValidPhone(phone)) {

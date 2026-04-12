@@ -32,6 +32,17 @@ public class ReportService {
         this.priceHistoryDAO = new PriceHistoryDAO();
     }
 
+    /** Constructor for dependency injection (testing). */
+    public ReportService(SalesTransactionDAO txnDAO, TransactionItemDAO txnItemDAO,
+                         ItemDAO itemDAO, InventoryRecordDAO inventoryDAO,
+                         PriceHistoryDAO priceHistoryDAO) {
+        this.txnDAO          = txnDAO;
+        this.txnItemDAO      = txnItemDAO;
+        this.itemDAO         = itemDAO;
+        this.inventoryDAO    = inventoryDAO;
+        this.priceHistoryDAO = priceHistoryDAO;
+    }
+
     public List<SalesTransaction> getTransactionsByDateRange(LocalDateTime start, LocalDateTime end) {
         if (start == null || end == null) {
             System.err.println("getTransactionsByDateRange() failed – start and end must not be null.");

@@ -5,7 +5,7 @@ import dao.SalesTransactionDAO;
 import dao.TransactionItemDAO;
 import model.Bill;
 import model.SalesTransaction;
-import model.TransactionItem;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,8 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

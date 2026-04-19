@@ -227,8 +227,14 @@
                 <VBox fx:id="panelTransactions" spacing="14" managed="false" visible="false">
                     <Label text="Transactions by Date Range" styleClass="welcome-label"/>
                     <Label text="Filter sales transactions by a date range." styleClass="section-subtitle"/>
-                    <VBox styleClass="info-card" spacing="10" maxWidth="480">
-                        <HBox spacing="16" alignment="CENTER_LEFT">
+                    <VBox styleClass="info-card" spacing="10" maxWidth="540">
+                        <HBox spacing="20" alignment="CENTER_LEFT">
+                            <RadioButton fx:id="txnRbToday"       text="Today"        selected="true"/>
+                            <RadioButton fx:id="txnRbThisMonth"   text="This Month"/>
+                            <RadioButton fx:id="txnRbCustomRange" text="Custom Range"/>
+                        </HBox>
+                        <!-- Date range shown only when Custom Range is selected -->
+                        <HBox fx:id="txnDateRangeBox" spacing="16" alignment="CENTER_LEFT" managed="false" visible="false">
                             <VBox spacing="5">
                                 <Label text="From Date" styleClass="field-label"/>
                                 <DatePicker fx:id="startDatePicker" prefWidth="200"/>
@@ -237,10 +243,9 @@
                                 <Label text="To Date" styleClass="field-label"/>
                                 <DatePicker fx:id="endDatePicker" prefWidth="200"/>
                             </VBox>
-                            <VBox spacing="5">
-                                <Label text=" " styleClass="field-label"/>
-                                <Button id="txnSearchBtn" text="Search" onAction="#handleViewTransactionsByDate" styleClass="btn-primary" prefHeight="36"/>
-                            </VBox>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button id="txnSearchBtn" text="Search Transactions" onAction="#handleViewTransactionsByDate" styleClass="btn-primary" prefHeight="36"/>
                         </HBox>
                     </VBox>
                     <VBox styleClass="table-card" spacing="8">
@@ -503,11 +508,14 @@
                             <RadioButton fx:id="saleRbThisMonth"   text="This Month"/>
                             <RadioButton fx:id="saleRbCustomRange" text="Custom Range"/>
                         </HBox>
-                        <HBox spacing="10" alignment="CENTER_LEFT">
+                        <!-- Date range shown only when Custom Range is selected -->
+                        <HBox fx:id="saleDateRangeBox" spacing="10" alignment="CENTER_LEFT" managed="false" visible="false">
                             <Label text="From:" styleClass="field-label"/>
                             <DatePicker fx:id="saleDpStart" promptText="Start date" prefWidth="160"/>
                             <Label text="To:" styleClass="field-label"/>
                             <DatePicker fx:id="saleDpEnd"   promptText="End date"   prefWidth="160"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
                             <Button id="saleGenerateBtn" text="Generate Report" onAction="#handleGenerateSaleReport" styleClass="btn-primary"/>
                         </HBox>
                     </VBox>
@@ -546,11 +554,14 @@
                             <RadioButton fx:id="itemRbThisMonth"   text="This Month"/>
                             <RadioButton fx:id="itemRbCustomRange" text="Custom Range"/>
                         </HBox>
-                        <HBox spacing="10" alignment="CENTER_LEFT">
+                        <!-- Date range shown only when Custom Range is selected -->
+                        <HBox fx:id="itemDateRangeBox" spacing="10" alignment="CENTER_LEFT" managed="false" visible="false">
                             <Label text="From:" styleClass="field-label"/>
                             <DatePicker fx:id="itemDpStart" promptText="Start date" prefWidth="160"/>
                             <Label text="To:" styleClass="field-label"/>
                             <DatePicker fx:id="itemDpEnd"   promptText="End date"   prefWidth="160"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
                             <Button id="itemGenerateBtn" text="Generate Report" onAction="#handleGenerateItemReport" styleClass="btn-primary"/>
                         </HBox>
                     </VBox>

@@ -12,6 +12,7 @@ import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import model.*;
 import service.AuthService;
@@ -90,8 +91,12 @@ public class ManagerDashboardController {
     @FXML private TableColumn<SalesTransaction, Double>  txnAmountCol;
     @FXML private TableColumn<SalesTransaction, String>  txnStatusCol;
     @FXML private TableColumn<SalesTransaction, String>  txnStaffCol;
-    @FXML private DatePicker startDatePicker;
-    @FXML private DatePicker endDatePicker;
+    @FXML private RadioButton txnRbToday;
+    @FXML private RadioButton txnRbThisMonth;
+    @FXML private RadioButton txnRbCustomRange;
+    @FXML private HBox        txnDateRangeBox;
+    @FXML private DatePicker  startDatePicker;
+    @FXML private DatePicker  endDatePicker;
 
     // ── Price History ─────────────────────────────────────────────────────────
     @FXML private TextField                              phItemCode;
@@ -160,6 +165,8 @@ public class ManagerDashboardController {
     @FXML private RadioButton itemRbToday;
     @FXML private RadioButton itemRbThisMonth;
     @FXML private RadioButton itemRbCustomRange;
+    @FXML private HBox        saleDateRangeBox;
+    @FXML private HBox        itemDateRangeBox;
     @FXML private DatePicker  itemDpStart;
     @FXML private DatePicker  itemDpEnd;
 
@@ -172,6 +179,7 @@ public class ManagerDashboardController {
 
     private ToggleGroup saleToggleGroup;
     private ToggleGroup itemToggleGroup;
+    private ToggleGroup txnToggleGroup;
 
     private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
 
@@ -206,6 +214,34 @@ public class ManagerDashboardController {
         if (itemRbToday != null) itemRbToday.setToggleGroup(itemToggleGroup);
         if (itemRbThisMonth != null) itemRbThisMonth.setToggleGroup(itemToggleGroup);
         if (itemRbCustomRange != null) itemRbCustomRange.setToggleGroup(itemToggleGroup);
+
+        txnToggleGroup = new ToggleGroup();
+        if (txnRbToday != null) txnRbToday.setToggleGroup(txnToggleGroup);
+        if (txnRbThisMonth != null) txnRbThisMonth.setToggleGroup(txnToggleGroup);
+        if (txnRbCustomRange != null) txnRbCustomRange.setToggleGroup(txnToggleGroup);
+
+        // Show date range pickers only when Custom Range is selected
+        if (saleToggleGroup != null && saleDateRangeBox != null) {
+            saleToggleGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+                boolean custom = (newT == saleRbCustomRange);
+                saleDateRangeBox.setVisible(custom);
+                saleDateRangeBox.setManaged(custom);
+            });
+        }
+        if (itemToggleGroup != null && itemDateRangeBox != null) {
+            itemToggleGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+                boolean custom = (newT == itemRbCustomRange);
+                itemDateRangeBox.setVisible(custom);
+                itemDateRangeBox.setManaged(custom);
+            });
+        }
+        if (txnToggleGroup != null && txnDateRangeBox != null) {
+            txnToggleGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
+                boolean custom = (newT == txnRbCustomRange);
+                txnDateRangeBox.setVisible(custom);
+                txnDateRangeBox.setManaged(custom);
+            });
+        }
 
         showPanel(panelWelcome);
     }
@@ -403,20 +439,12 @@ public class ManagerDashboardController {
     // ── Transactions by Date ──────────────────────────────────────────────────
     @FXML
     private void handleViewTransactionsByDate() {
-        LocalDate startDate = startDatePicker.getValue();
-        LocalDate endDate   = endDatePicker.getValue();
+        LocalDate[] range = resolveDateRange(txnRbToday, txnRbThisMonth, txnRbCustomRange,
+                                             startDatePicker, endDatePicker, "txn");
+        if (range == null) return;
 
-        if (startDate == null || endDate == null) {
-            AlertHelper.showError("Validation Error", "Please select both start and end dates.");
-            return;
-        }
-        if (endDate.isBefore(startDate)) {
-            AlertHelper.showError("Validation Error", "End date must be after start date.");
-            return;
-        }
-
-        LocalDateTime start = startDate.atStartOfDay();
-        LocalDateTime end   = endDate.atTime(LocalTime.MAX);
+        LocalDateTime start = range[0].atStartOfDay();
+        LocalDateTime end   = range[1].atTime(LocalTime.MAX);
 
         List<SalesTransaction> txns = reportService.getTransactionsByDateRange(start, end);
         txnTable.setItems(FXCollections.observableArrayList(txns));
@@ -544,7 +572,24 @@ public class ManagerDashboardController {
     }
 
     @FXML private void showAddVendor()    { hideVendorForms(); setVisible(addVendorForm, true); }
-    @FXML private void showUpdateVendor() { hideVendorForms(); setVisible(updateVendorForm, true); }
+    @FXML private void showUpdateVendor() {
+        Vendor selected = vendorTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            AlertHelper.showError("No Vendor Selected",
+                    "Please select a vendor from the table above before clicking Update Vendor.");
+            return;
+        }
+        hideVendorForms();
+        setVisible(updateVendorForm, true);
+        // Pre-fill with existing data so the user edits only what they need
+        updVendorId.setText(String.valueOf(selected.getVendorId()));
+        updVendorPhone.setText(selected.getPhone()   != null ? selected.getPhone()   : "");
+        updVendorEmail.setText(selected.getEmail()   != null ? selected.getEmail()   : "");
+        updVendorAddress.setText(selected.getAddress() != null ? selected.getAddress() : "");
+        // Vendor ID is read-only — the user should not change it
+        updVendorId.setEditable(false);
+        updVendorId.setStyle("-fx-opacity: 0.6;");
+    }
     @FXML private void showDeleteVendor() { hideVendorForms(); setVisible(deleteVendorForm, true); }
 
     @FXML
@@ -559,6 +604,22 @@ public class ManagerDashboardController {
             return;
         }
 
+        if (!phone.matches("[6-9]\\d{9}")) {
+            AlertHelper.showError("Invalid Phone Number",
+                    "Vendor phone must be a valid Indian mobile number:\n"
+                    + "  \u2022 Exactly 10 digits\n"
+                    + "  \u2022 Must start with 6, 7, 8, or 9\n"
+                    + "Entered: \"" + phone + "\"");
+            return;
+        }
+
+        if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            AlertHelper.showError("Invalid Email",
+                    "Please enter a valid email address (e.g. vendor@company.com)\n"
+                    + "or leave it blank.");
+            return;
+        }
+
         boolean ok = vendorService.addVendor(name, phone, email, address);
         if (ok) {
             AlertHelper.showInfo("Success", "Vendor '" + name + "' added successfully.");
@@ -566,7 +627,7 @@ public class ManagerDashboardController {
             newVendorEmail.clear(); newVendorAddress.clear();
             handleViewAllVendors();
         } else {
-            AlertHelper.showError("Error", "Failed to add vendor. Ensure phone is exactly 10 digits and unique.");
+            AlertHelper.showError("Error", "Failed to add vendor. Phone number may already be registered.");
         }
     }
 
@@ -629,6 +690,11 @@ public class ManagerDashboardController {
         setVisible(addVendorForm, false);
         setVisible(updateVendorForm, false);
         setVisible(deleteVendorForm, false);
+        // Reset the Vendor ID field so it's not permanently locked
+        if (updVendorId != null) {
+            updVendorId.setEditable(true);
+            updVendorId.setStyle("");
+        }
     }
 
     // ── Logout ────────────────────────────────────────────────────────────────
@@ -684,6 +750,20 @@ public class ManagerDashboardController {
         safe(vPhoneCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getPhone()));
         safe(vEmailCol)  .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getEmail()));
         safe(vAddressCol).setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getAddress()));
+
+        // When the user clicks a different vendor row while the update form is open, refresh the fields
+        if (vendorTable != null) {
+            vendorTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+                if (newV != null && updateVendorForm != null && updateVendorForm.isVisible()) {
+                    updVendorId.setText(String.valueOf(newV.getVendorId()));
+                    updVendorPhone.setText(newV.getPhone()   != null ? newV.getPhone()   : "");
+                    updVendorEmail.setText(newV.getEmail()   != null ? newV.getEmail()   : "");
+                    updVendorAddress.setText(newV.getAddress() != null ? newV.getAddress() : "");
+                    updVendorId.setEditable(false);
+                    updVendorId.setStyle("-fx-opacity: 0.6;");
+                }
+            });
+        }
 
         // Sales Report Tables
         safe(saleTxnIdCol) .setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getTransactionId()));

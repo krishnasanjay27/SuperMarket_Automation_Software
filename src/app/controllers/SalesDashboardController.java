@@ -126,6 +126,45 @@ public class SalesDashboardController {
 
     @FXML
     private void handleCreateTransaction() {
+        // Guard: if there is already an active transaction, ask the user what to do first.
+        String existingTxnId = session.getActiveTransactionId();
+        if (existingTxnId != null) {
+            // Build a custom dialog with three choices.
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Active Transaction Exists");
+            alert.setHeaderText("Transaction " + existingTxnId + " is still open.");
+            alert.setContentText("You must finalize or abort the current transaction before starting a new one.\n\n"
+                    + "What would you like to do?");
+
+            ButtonType btnFinalize = new ButtonType("Finalize Current");
+            ButtonType btnAbort    = new ButtonType("Abort Current");
+            ButtonType btnCancel   = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            alert.getButtonTypes().setAll(btnFinalize, btnAbort, btnCancel);
+
+            Optional<ButtonType> choice = alert.showAndWait();
+            if (choice.isEmpty() || choice.get() == btnCancel) {
+                return; // do nothing — keep the current transaction open
+            }
+
+            if (choice.get() == btnFinalize) {
+                // Re-use finalize logic but inline the check for empty items
+                if (itemsTable.getItems().isEmpty()) {
+                    AlertHelper.showError("Cannot Finalize",
+                            "The current transaction has no items.\n"
+                            + "Please add items before finalizing, or choose Abort instead.");
+                    return;
+                }
+                handleFinalizeTransaction();
+                // Only proceed if finalize actually cleared the active transaction
+                if (session.getActiveTransactionId() != null) return;
+
+            } else { // Abort
+                handleAbortTransaction();
+                if (session.getActiveTransactionId() != null) return;
+            }
+        }
+
+        // No active transaction — safe to create a new one.
         String txnId = transactionService.createTransaction(session.getUserId());
         if (txnId == null) {
             AlertHelper.showError("Error", "Failed to create transaction.");
@@ -155,7 +194,9 @@ public class SalesDashboardController {
 
         if (!customerService.isValidPhone(phone)) {
             AlertHelper.showError("Invalid Phone Number",
-                    "Phone number must be exactly 10 digits (numbers only).\n"
+                    "Phone number must be a valid Indian mobile number:\n"
+                    + "  • Exactly 10 digits\n"
+                    + "  • Must start with 6, 7, 8, or 9\n"
                     + "Entered: \"" + phone + "\"");
             return;
         }
@@ -205,10 +246,19 @@ public class SalesDashboardController {
         dialog.setResultConverter(buttonType -> {
             if (buttonType == registerBtn) {
                 String name = nameField.getText().trim();
-                if (name.isEmpty()) return null;
+                if (name.isEmpty()) {
+                    AlertHelper.showError("Validation Error", "Customer name is required.");
+                    return null;
+                }
+                String email = emailField.getText().trim();
+                if (!customerService.isValidEmail(email)) {
+                    AlertHelper.showError("Invalid Email",
+                            "Please enter a valid email address (e.g. name@example.com)\n"
+                            + "or leave it blank if the customer has no email.");
+                    return null;
+                }
                 return customerService.registerCustomerIfNotExists(
-                        phone, name,
-                        emailField.getText().trim(),
+                        phone, name, email,
                         addressField.getText().trim());
             }
             return null;
@@ -218,7 +268,7 @@ public class SalesDashboardController {
         if (result.isPresent() && result.get() != null) {
             return result.get();
         }
-        AlertHelper.showError("Registration Failed", "Customer name is required.");
+        AlertHelper.showError("Registration Failed", "Customer could not be registered. Please check the entered details.");
         return null;
     }
 
@@ -255,16 +305,33 @@ public class SalesDashboardController {
             return;
         }
 
-        double discount = customerService.calculateDiscount(points);
-
+        // Calculate the requested discount and cap it at the current bill subtotal.
+        // Only the EFFECTIVE points (those that actually contribute to a discount)
+        // should be considered — you cannot deduct more points than the bill allows.
         List<TransactionItem> items = itemsTable.getItems();
         double subtotal = items.stream().mapToDouble(TransactionItem::getLineTotal).sum();
-        if (discount > subtotal) discount = subtotal;
 
-        double finalTotal = subtotal - discount;
+        double requestedDiscount = customerService.calculateDiscount(points);
+        double effectiveDiscount = Math.min(requestedDiscount, subtotal);
 
-        discountLabel.setText("Discount: ₹ " + String.format("%.2f", discount));
-        discountSummaryLabel.setText("- ₹ " + String.format("%.2f", discount));
+        // Convert effective discount back to effective points (1 point = ₹1)
+        int effectivePoints = (int) Math.ceil(effectiveDiscount);
+
+        if (effectivePoints < points) {
+            // Let the user know that fewer points will actually be applied
+            AlertHelper.showInfo("Points Capped to Bill Amount",
+                    "You entered " + points + " points (₹" + String.format("%.2f", requestedDiscount) + " discount),\n"
+                    + "but the bill total is only ₹" + String.format("%.2f", subtotal) + ".\n\n"
+                    + "Only " + effectivePoints + " points (₹" + String.format("%.2f", effectiveDiscount) + ") will be applied.\n"
+                    + "The remaining " + (points - effectivePoints) + " points will stay in the account.");
+            // Update the field to show the effective points that will actually be used
+            redeemPointsField.setText(String.valueOf(effectivePoints));
+        }
+
+        double finalTotal = subtotal - effectiveDiscount;
+
+        discountLabel.setText("Discount: ₹ " + String.format("%.2f", effectiveDiscount));
+        discountSummaryLabel.setText("- ₹ " + String.format("%.2f", effectiveDiscount));
         totalLabel.setText(String.format("₹ %.2f", finalTotal));
     }
 

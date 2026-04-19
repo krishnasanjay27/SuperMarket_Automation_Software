@@ -8,7 +8,10 @@ import java.util.List;
 public class CustomerService {
 
     private static final double POINT_VALUE   = 1.0;
-    private static final String PHONE_PATTERN = "\\d{10}";
+    /** Indian mobile: starts with 6, 7, 8, or 9 and is exactly 10 digits. */
+    private static final String PHONE_PATTERN = "[6-9]\\d{9}";
+    /** Basic email pattern: local@domain.tld */
+    private static final String EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
 
     private final CustomerDAO customerDAO;
 
@@ -102,10 +105,19 @@ public class CustomerService {
     }
 
     /**
-     * Returns true if the phone is exactly 10 numeric digits.
-     * This is the single source of phone validation truth for the service layer.
+     * Returns true if the phone is a valid Indian mobile number:
+     * starts with 6-9 and is exactly 10 digits.
      */
     public boolean isValidPhone(String phone) {
         return phone != null && phone.trim().matches(PHONE_PATTERN);
+    }
+
+    /**
+     * Returns true if the email is a valid email address (or blank/null, which is acceptable
+     * since email is optional for customer registration).
+     */
+    public boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) return true; // optional field
+        return email.trim().matches(EMAIL_PATTERN);
     }
 }

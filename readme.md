@@ -58,3 +58,26 @@ If you want to run the background tests via the command-line without the GUI (ma
 ```bat
 java -cp "lib\mysql-connector-j-9.6.0.jar;out" app.Main
 ```
+
+---
+
+## Running JUnit Tests
+
+The project uses Maven to manage and run automated JUnit tests. You can run the test suite by executing the following command in your terminal from the project root directory.
+
+**Bash (Linux/macOS):**
+```bash
+mvn clean test
+```
+
+**Windows (PowerShell/Command Prompt):**
+```bat
+mvn clean test
+```
+
+> **Note:** This requires Maven to be installed on your system. If you are on Windows and don't have Maven installed globally, you can download and run it locally with these PowerShell commands:
+> ```powershell
+> Invoke-WebRequest -Uri "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip" -OutFile "maven.zip"
+> Expand-Archive -Path "maven.zip" -DestinationPath "."
+> .\apache-maven-3.9.6\bin\mvn.cmd clean test
+> ```
